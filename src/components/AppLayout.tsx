@@ -1,8 +1,11 @@
+import React from 'react';
 import { AppShell } from "@mantine/core";
 import { Outlet } from "react-router";
 import { LAYOUT } from "../utils/constants";
+import { Header } from "./layout/Header";
+import { Navbar } from "./layout/Navbar";
 
-export const AppLayout = () => {
+export const AppLayout: React.FC = () => {
   return (
     <AppShell
       withBorder={false}
@@ -13,24 +16,11 @@ export const AppLayout = () => {
       }}
     >
       <AppShell.Header>
-        <div className="flex h-full flex-row">
-          {/* Left section - Project icon aligned with navbar width */}
-          <div
-            className="flex items-center justify-center p-3 font-semibold"
-            style={{ width: LAYOUT.NAVBAR_WIDTH }}
-          >
-            JAMRA
-          </div>
-
-          {/* Right section - Breadcrumbs and Search with space-between */}
-          <div className="flex flex-1 items-center justify-between px-3">
-            <div>Breadcrumbs</div>
-            <div>Search</div>
-          </div>
-        </div>
+        {/* header component */}
+        <Header />
       </AppShell.Header>
       <AppShell.Navbar className="flex flex-1 items-center p-3">
-        Navbar
+        <Navbar />
       </AppShell.Navbar>
       <AppShell.Main className="flex">
         <div

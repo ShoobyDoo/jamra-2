@@ -3,11 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "dev:server": "tsx watch server/src/index.ts",
+    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\" --names \"frontend,backend\" --prefix-colors \"cyan,magenta\" --kill-others",
     "build": "tsc -b && vite build",
+    "build:server": "tsc -p server/tsconfig.json",
+    "build:electron": "electron-builder",
+    "build:all": "pnpm build:server && pnpm build && pnpm build:electron",
+    "build:clean": "rm -rf dist dist-electron server/dist dist-electron-build .electron-cache",
+    "generate:icons": "node scripts/generate-icons.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@mantine/core": "^8.3.5",
@@ -15,23 +24,35 @@
     "@mantine/dropzone": "^8.3.5",
     "@mantine/hooks": "^8.3.5",
     "@mantine/notifications": "^8.3.5",
-    "@reduxjs/toolkit": "^2.9.2",
+    "@tabler/icons-react": "^3.35.0",
     "@tailwindcss/vite": "^4.1.16",
     "@tanstack/react-query": "^5.90.5",
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
     "dayjs": "^1.11.18",
+    "express": "^5.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-redux": "^9.2.0",
     "react-router": "^7.9.4",
-    "tailwindcss": "^4.1.16"
+    "tailwindcss": "^4.1.16",
+    "ws": "^8.18.3",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.5",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.1.0",
+    "concurrently": "^9.2.1",
+    "electron": "^38.3.0",
+    "electron-builder": "^26.1.0",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
@@ -42,13 +63,23 @@
     "prettier": "^3.6.2",
     "prettier-plugin-organize-imports": "^4.3.0",
     "prettier-plugin-tailwindcss": "^0.7.1",
+    "sharp": "^0.34.4",
+    "tsx": "^4.19.3",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
-    "vite": "npm:rolldown-vite@7.1.14"
+    "vite": "npm:rolldown-vite@7.1.14",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
   },
   "pnpm": {
     "overrides": {
       "vite": "npm:rolldown-vite@7.1.14"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "electron",
+      "electron-winstaller",
+      "esbuild"
+    ]
   }
 }

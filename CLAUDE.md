@@ -4,9 +4,199 @@
 - **Mantine**: v8.3.5 (@mantine/core, @mantine/dates, @mantine/dropzone, @mantine/hooks, @mantine/notifications)
 - **React**: 19.1.1
 - **TailwindCSS**: 4.1.16
-- **Redux Toolkit**: 2.9.2
+- **TanStack Query**: 5.90.5 (server state management)
+- **Zustand**: 5.0.8 (UI state management)
 - **React Router**: 7.9.4
+- **WebSocket**: ws 8.18.3 (real-time updates)
+- **Tabler Icons**: 3.35.0
 - **PostCSS**: postcss-preset-mantine 1.18.0
+
+---
+
+## Code Standards & Architecture
+
+### Component Export Pattern
+**ALWAYS use named exports with React.FC annotation:**
+
+```tsx
+// ✓ CORRECT
+import React from 'react';
+
+export const MyComponent: React.FC = () => {
+  return <div>Content</div>;
+};
+
+// With props
+interface MyComponentProps {
+  title: string;
+  count: number;
+}
+
+export const MyComponent: React.FC<MyComponentProps> = ({ title, count }) => {
+  return <div>{title}: {count}</div>;
+};
+
+// ✗ WRONG - Don't use default exports
+const MyComponent = () => { ... };
+export default MyComponent;
+```
+
+**Rationale:**
+- Named exports enforce consistent naming across imports
+- Better for tree-shaking and refactoring tools
+- Prevents import renaming inconsistencies
+- React.FC provides explicit typing for component props and return type
+
+### Function Declaration Pattern
+**ALWAYS use const arrow functions:**
+
+```tsx
+// ✓ CORRECT
+const handleClick = () => {
+  // logic
+};
+
+const handleSubmit = (values: FormValues) => {
+  // logic
+};
+
+// ✗ WRONG
+function handleClick() { }
+function handleSubmit(values: FormValues) { }
+```
+
+### API Endpoint Constants
+**Use centralized ENDPOINTS for multi-use API routes:**
+
+```tsx
+// ✓ CORRECT - Import from constants
+import { ENDPOINTS } from '@/constants/api';
+
+const { data } = useQuery({
+  queryKey: ['library'],
+  queryFn: () => apiClient.get(ENDPOINTS.LIBRARY),
+});
+
+// ✗ WRONG - Hardcoded strings (only acceptable for single-use endpoints)
+const { data } = useQuery({
+  queryKey: ['library'],
+  queryFn: () => apiClient.get('/library'),
+});
+```
+
+**Rule of Thumb:** If an endpoint is used in 2+ places, add it to `src/constants/api.ts`
+
+### State Management Architecture
+
+#### Server State: TanStack Query
+**Use TanStack Query for ALL server data:**
+
+```tsx
+import { useLibrary } from '@/hooks/queries/useLibraryQueries';
+
+const MyComponent: React.FC = () => {
+  const { data: library, isLoading, error } = useLibrary();
+
+  if (isLoading) return <Loader />;
+  if (error) return <ErrorMessage error={error} />;
+
+  return <div>{library.map(item => ...)}</div>;
+};
+```
+
+**Benefits:**
+- Automatic caching and cache invalidation
+- Built-in loading and error states
+- Automatic refetching (window focus, reconnect, intervals)
+- Request deduplication
+- Optimistic updates
+- Stale-while-revalidate pattern
+
+#### UI State: Zustand
+**Use Zustand ONLY for UI-specific state:**
+
+```tsx
+import { useUIStore } from '@/store/useUIStore';
+
+const MyComponent: React.FC = () => {
+  const { isModalOpen, openModal, closeModal } = useUIStore();
+
+  return <Button onClick={openModal}>Open Modal</Button>;
+};
+```
+
+**Appropriate Zustand Use Cases:**
+- Modal open/closed state
+- Sidebar collapsed/expanded
+- Theme preferences
+- Reading mode (page fit, direction)
+- Current page in reader
+
+**❌ NEVER use Zustand for server data** (downloads, manga, chapters, library)
+- See `src/store/useDownloadStore.ts` for detailed anti-pattern documentation
+
+### Real-Time Updates: WebSocket
+
+**Use WebSocket for real-time server events instead of polling:**
+
+```tsx
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { useDownloadQueue } from '@/hooks/queries/useDownloadQueries';
+import { WS_EVENTS } from '@/constants/websocket';
+import type { DownloadProgressPayload } from '@/types';
+
+const DownloadsPage: React.FC = () => {
+  // Get initial data from TanStack Query
+  const { data: queue } = useDownloadQueue();
+
+  // Subscribe to real-time updates
+  const progressUpdate = useWebSocket<DownloadProgressPayload>(
+    WS_EVENTS.DOWNLOAD_PROGRESS
+  );
+
+  // Invalidate cache when WebSocket event received
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (progressUpdate) {
+      queryClient.invalidateQueries({ queryKey: downloadKeys.queue });
+    }
+  }, [progressUpdate, queryClient]);
+
+  return <DownloadQueue items={queue} />;
+};
+```
+
+**WebSocket Events Available:**
+- `WS_EVENTS.DOWNLOAD_STARTED`
+- `WS_EVENTS.DOWNLOAD_PROGRESS`
+- `WS_EVENTS.DOWNLOAD_PAGE_COMPLETE`
+- `WS_EVENTS.DOWNLOAD_CHAPTER_COMPLETE`
+- `WS_EVENTS.DOWNLOAD_FAILED`
+- `WS_EVENTS.DOWNLOAD_CANCELLED`
+
+**Connection Management:**
+- Auto-connects on app start
+- Auto-reconnects with exponential backoff
+- Max 10 reconnection attempts
+- Access via `wsClient` singleton from `@/lib/websocket-client`
+
+### Constants Organization
+
+All magic numbers and reusable values live in `src/constants/`:
+
+```
+src/constants/
+├── api.ts          # API_BASE_URL, ENDPOINTS
+├── query.ts        # TanStack Query config (staleTime, gcTime, etc.)
+├── websocket.ts    # WebSocket events, connection config
+├── ui.ts           # UI constants (pagination, timeouts, etc.)
+└── index.ts        # Re-exports all constants
+```
+
+**Usage:**
+```tsx
+import { ENDPOINTS, WS_EVENTS, STALE_TIME } from '@/constants';
+```
 
 ---
 
