@@ -144,6 +144,9 @@ const createWindow = (): void => {
       nodeIntegration: false,
     },
   });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 
   // Load dev server URL (Vite runs on port 5173)
   // In production, load from ASAR (Electron can read files inside ASAR archives)
@@ -157,6 +160,13 @@ const createWindow = (): void => {
 // Application initialization
 app.whenReady().then(async () => {
   try {
+    // Improve process naming/identity on Windows
+    try {
+      app.setAppUserModelId("com.jamra.reader");
+      app.setName("Jamra Manga Reader");
+      process.title = "Jamra Manga Reader (Main)";
+    } catch {}
+
     setupLogging();
 
     // Start Express server in main process
@@ -197,8 +207,13 @@ app.on("window-all-closed", async () => {
 app.on("before-quit", async (event) => {
   if (httpServer) {
     event.preventDefault(); // Prevent immediate quit
+    // Force-exit fallback in case of stubborn sockets
+    const forceExit = setTimeout(() => {
+      try { app.exit(0); } catch { process.exit(0); }
+    }, 8000);
     await shutdownServer();
     httpServer = null;
+    clearTimeout(forceExit);
     app.quit(); // Now quit after cleanup
   }
 });

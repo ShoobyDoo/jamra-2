@@ -34,6 +34,23 @@ export default defineConfig({
       {
         // Preload script entry
         entry: "electron/preload.ts",
+        // Build preload as CommonJS so Electron can load it without `type: module`
+        // This avoids "Cannot use import statement outside a module" on some hosts
+        vite: {
+          build: {
+            lib: {
+              entry: "electron/preload.ts",
+              formats: ["cjs"],
+              fileName: () => "preload.js",
+            },
+            rollupOptions: {
+              output: {
+                format: "cjs",
+              },
+            },
+            minify: false,
+          },
+        },
         onstart(options) {
           // Notify the Renderer-Process to reload the page when the Preload-Scripts build is complete
           options.reload();

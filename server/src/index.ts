@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { createServer, Server as HttpServer } from 'http';
+import type { Socket } from 'node:net';
 import { WebSocketServer } from 'ws';
 import mangaRoutes from './routes/manga.routes.js';
 import chapterRoutes from './routes/chapter.routes.js';
@@ -13,6 +14,7 @@ import { initializeWebSocketServer } from './websocket/handlers.js';
 // Store server instances for cleanup
 let httpServer: HttpServer | null = null;
 let websocketServer: WebSocketServer | null = null;
+const openSockets: Set<Socket> = new Set();
 
 /**
  * Initialize and configure the Express server with all routes, middleware,
@@ -28,6 +30,11 @@ export const initializeServer = (): { app: express.Application; server: HttpServ
   // Create HTTP server (needed for WebSocket upgrade)
   const server = createServer(app);
   httpServer = server;
+  // Track open TCP connections so we can destroy them on shutdown
+  server.on('connection', (socket: Socket) => {
+    openSockets.add(socket);
+    socket.on('close', () => openSockets.delete(socket));
+  });
 
   // Middleware
   app.use(cors());
@@ -79,7 +86,12 @@ export const shutdownServer = (): Promise<void> => {
       return;
     }
 
-    // 1. Stop accepting new connections
+    // 1. Stop accepting new connections and proactively destroy keep-alive sockets
+    for (const socket of openSockets) {
+      try { socket.destroy(); } catch {}
+      openSockets.delete(socket);
+    }
+
     httpServer.close((err) => {
       if (err) {
         console.error('Error closing HTTP server:', err);
