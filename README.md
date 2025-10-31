@@ -19,7 +19,7 @@ A feature-rich manga reader desktop application built with Electron, React, and 
 
 ### Desktop
 - **Electron 38.3.0** - Desktop wrapper
-- **Electron Builder 26.1.0** - Build tooling
+- **Electron Forge 7** - Packaging (Squirrel/DMG/DEB)
 
 ## Architecture
 
@@ -105,9 +105,41 @@ pnpm build
 # Build backend
 pnpm build:server
 
-# Build Electron app
-pnpm build:electron
+# Package distributables for current OS
+pnpm make
 ```
+
+### Alternative Windows Builder (NSIS Installer, Portable EXE)
+If Squirrel fails on your environment, use Electron Builder:
+
+```bash
+# Windows installer (NSIS) and portable EXE
+pnpm dist:win
+
+# macOS dmg/zip
+pnpm dist:mac
+
+# Linux deb
+pnpm dist:linux
+```
+
+Electron Builder is configured in `electron-builder.yml` and includes:
+- Files: `dist/**`, `dist-electron/**`, `server/dist/**`
+- ASAR unpack for native modules: `**/*.node`
+
+Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/icon.ico` and set `setupIcon` in `forge.config.js` to that file. A quick way to generate one is to convert your `icon-256.png` to `.ico` with a tool like `png-to-ico`.
+
+### Windows Prerequisites (better-sqlite3)
+- Install Visual Studio 2022 Build Tools with “Desktop development with C++” and Windows 10/11 SDK.
+- Install Python 3 and ensure `python` is on PATH.
+- After `pnpm install`, native modules are rebuilt automatically via `postinstall`:
+  - `electron-rebuild -f -w better-sqlite3`
+
+### Log Files (for debugging packaged exe)
+- Main/server logs: `%APPDATA%/jamra-2/logs/main.log` (defaults to app name)
+- On macOS: `~/Library/Application Support/jamra-2/logs/main.log`
+- Note: If `productName` is set in `package.json`, replace `jamra-2` with that value.
+- On Linux: `~/.config/Jamra Manga Reader/logs/main.log`
 
 ## State Management
 
@@ -159,17 +191,19 @@ All endpoints accessible at `http://localhost:3000/api`
 
 Better-SQLite3 uses **native bindings** which require special handling:
 
-1. **Prebuilt Binaries**: The `postinstall` script runs `electron-builder install-app-deps` to ensure correct binaries for your platform
+1. **Native Bindings**: Rebuilt on install (`postinstall`) for the active Electron version.
 
-2. **Testing**: Build and test on each target platform:
+2. **Packaging targets**: Forge makers configured for Windows (Squirrel), macOS (DMG/ZIP), Linux (DEB). Build per-OS on native runners (no cross‑OS signing/building). For AppImage, consider Electron Builder.
+
+3. **Testing**: Build and test on each target platform:
    - Windows x64/arm64
    - macOS Intel/Apple Silicon
    - Linux x64/arm64
 
-3. **Troubleshooting**: If native bindings fail:
+4. **Troubleshooting**: If native bindings fail:
    - Ensure Node.js 20+ is installed
-   - Run `pnpm rebuild better-sqlite3`
-   - Check electron-builder logs
+   - Run `pnpm exec electron-rebuild -f -w better-sqlite3`
+   - Check Forge logs and `logs/main.log`
 
 ## Scripts
 

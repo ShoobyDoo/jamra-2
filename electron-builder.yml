@@ -1,0 +1,38 @@
+appId: com.jamra.reader
+productName: Jamra Manga Reader
+directories:
+  output: release
+  buildResources: public
+files:
+  - dist/**
+  - dist-electron/**
+  - server/dist/**
+  - package.json
+  - "!**/*.map"
+asar: true
+asarUnpack:
+  - "**/*.node"
+  - dist-electron/preload.js
+npmRebuild: true
+extraResources:
+  - from: server/src/database/schema.sql
+    to: server/schema.sql
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+  # icon: public/icon.ico  # Optional: provide a .ico to customize installer/app icon
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: "${productName}-${version}-Setup.${ext}"
+mac:
+  target: [dmg, zip]
+  category: public.app-category.utilities
+linux:
+  target: [deb]
+  category: Utility
+publish: []

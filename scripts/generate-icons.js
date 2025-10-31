@@ -56,7 +56,7 @@ const generateIcons = async () => {
       .toFile(path.join(outputDir, 'icon-256.png'));
     console.log('✓ Generated icon-256.png (for Windows .ico)');
 
-    // Note: electron-builder will automatically convert PNG to ICO for Windows
+    // Note: electron-forge will automatically convert PNG to ICO for Windows
     // and will handle ICNS generation for macOS if needed
 
     console.log('\n✅ All icons generated successfully!');

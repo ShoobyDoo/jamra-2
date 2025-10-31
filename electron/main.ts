@@ -1,131 +1,104 @@
-import { ChildProcess, spawn } from "child_process";
-import { app, BrowserWindow, dialog } from "electron";
+import { app, BrowserWindow } from "electron";
 import path from "path";
+import fs from "fs";
+import { Server as HttpServer } from "http";
+import { initializeServer, shutdownServer } from "../server/dist/index.js";
 
-// Use Electron's app.getAppPath() as an equivalent for __dirname so we avoid using import.meta
+// No Squirrel handlers — Electron Builder (NSIS/portable) is used on Windows
+
+// Minimal file logger
+let logFilePath: string | null = null;
+const earlyBuffer: string[] = [];
+const writeLog = (level: string, ...parts: unknown[]): void => {
+  if (!logFilePath) return;
+  const ts = new Date().toISOString();
+  const msg = parts
+    .map((p) => (typeof p === "string" ? p : (() => { try { return JSON.stringify(p); } catch { return String(p); } })()))
+    .join(" ");
+  try {
+    fs.appendFileSync(logFilePath, `[${ts}] [${level}] ${msg}\n`);
+  } catch {}
+};
+// Catch errors as early as possible, before app is ready
+process.on("uncaughtException", (error) => {
+  const e = error instanceof Error ? error.stack || error.message : String(error);
+  earlyBuffer.push(`[${new Date().toISOString()}] [FATAL] uncaughtException ${e}`);
+});
+process.on("unhandledRejection", (reason) => {
+  const r = typeof reason === "string" ? reason : (() => { try { return JSON.stringify(reason); } catch { return String(reason); } })();
+  earlyBuffer.push(`[${new Date().toISOString()}] [FATAL] unhandledRejection ${r}`);
+});
+const setupLogging = (): void => {
+  try {
+    const logsDir = path.join(app.getPath("userData"), "logs");
+    if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+    logFilePath = path.join(logsDir, "main.log");
+    const orig = { ...console } as any;
+    console.log = (...a: any[]) => { writeLog("INFO", ...a); orig.log(...a); };
+    console.info = (...a: any[]) => { writeLog("INFO", ...a); orig.info(...a); };
+    console.warn = (...a: any[]) => { writeLog("WARN", ...a); orig.warn(...a); };
+    console.error = (...a: any[]) => { writeLog("ERROR", ...a); orig.error(...a); };
+    // Flush any early buffered errors
+    if (earlyBuffer.length) {
+      try { fs.appendFileSync(logFilePath, earlyBuffer.join("\n") + "\n"); } catch {}
+      earlyBuffer.length = 0;
+    }
+  } catch {}
+};
+
+// Use Electron's app.getAppPath() as an equivalent for __dirname
 const __dirname = app.getAppPath();
 
-let serverProcess: ChildProcess | null = null;
 let mainWindow: BrowserWindow | null = null;
+let httpServer: HttpServer | null = null;
 
-const startServer = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    try {
-      const isDev = !app.isPackaged;
+/**
+ * Start the Express server in the Electron main process.
+ * No child process spawning - runs directly in the same process.
+ */
+const startServer = async (): Promise<void> => {
+  const isDev = !app.isPackaged;
 
-      // In development, server is already running via 'pnpm dev:all'
-      // Only spawn server in production
-      if (isDev) {
-        console.log("Checking for backend...");
+  console.log("Initializing Express server in main process...");
+
+  // Set database path to user data directory
+  process.env.DB_PATH = app.getPath("userData");
+  process.env.RESOURCES_PATH = process.resourcesPath;
+  process.env.ELECTRON_PACKAGED = app.isPackaged ? "true" : "false";
+
+  if (isDev) {
+    console.log("Development mode: Server code hot-reloads via tsx watch");
+    console.log("Waiting for backend to be ready...");
+  }
+
+  try {
+    // Initialize server directly (no spawning)
+    const { server } = initializeServer();
+    httpServer = server;
+
+    // Start listening on port 3000
+    await new Promise<void>((resolve, reject) => {
+      server.listen(3000, () => {
+        console.log("✅ Server running at http://localhost:3000");
+        console.log("✅ API available at http://localhost:3000/api");
+        console.log("🔌 WebSocket server available at ws://localhost:3000");
         resolve();
-        return;
-      }
-
-      // Production mode: spawn the server
-      const serverPath = path.join(
-        process.resourcesPath,
-        "app.asar.unpacked",
-        "server",
-        "dist",
-        "index.js",
-      );
-
-      // Get userData directory for database storage
-      const dbPath = app.getPath("userData");
-
-      console.log("Starting server from:", serverPath);
-      console.log("Database path:", dbPath);
-
-      // Spawn server using Electron's bundled Node.js (not system Node.js)
-      // ELECTRON_RUN_AS_NODE tells Electron to run as Node.js instead of Electron
-      // Set cwd to app.asar.unpacked so node_modules can be resolved
-      const unpackedPath = path.join(
-        process.resourcesPath,
-        "app.asar.unpacked"
-      );
-
-      serverProcess = spawn(process.execPath, [serverPath], {
-        cwd: unpackedPath,
-        env: {
-          ...process.env,
-          ELECTRON_RUN_AS_NODE: "1",
-          DB_PATH: dbPath,
-          ELECTRON_PACKAGED: "true",
-          RESOURCES_PATH: process.resourcesPath,
-        },
       });
 
-      console.log("Started Express server (pid:", serverProcess.pid, ")");
-
-      // Capture stderr for error reporting
-      let stderrOutput = "";
-
-      // Handle server errors
-      serverProcess.on("error", (error) => {
-        console.error("Server process error:", error);
-        reject(new Error(`Failed to start server: ${error.message}`));
+      server.on("error", (error) => {
+        console.error("Failed to start server:", error);
+        reject(error);
       });
-
-      // Log server output
-      serverProcess.stdout?.on("data", (data) => {
-        console.log("Server:", data.toString());
-      });
-
-      serverProcess.stderr?.on("data", (data) => {
-        const errorText = data.toString();
-        console.error("Server error:", errorText);
-        stderrOutput += errorText;
-      });
-
-      // Handle server exit
-      serverProcess.on("exit", (code, signal) => {
-        console.log(`Server exited with code ${code} and signal ${signal}`);
-        if (code !== 0 && code !== null) {
-          const errorMessage = stderrOutput
-            ? `Server exited with code ${code}\n\nError output:\n${stderrOutput}`
-            : `Server exited with code ${code}`;
-          reject(new Error(errorMessage));
-        }
-      });
-
-      // Resolve after a brief delay to allow server to start
-      setTimeout(() => resolve(), 1000);
-    } catch (error) {
-      reject(error);
-    }
-  });
-};
-
-const stopServer = (): Promise<void> => {
-  return new Promise((resolve) => {
-    if (!serverProcess) {
-      resolve();
-      return;
-    }
-
-    console.log("Stopping server gracefully...");
-
-    // Try graceful shutdown first with SIGTERM
-    serverProcess.kill("SIGTERM");
-
-    // Wait for graceful shutdown (max 5 seconds)
-    const gracefulTimeout = setTimeout(() => {
-      if (serverProcess && !serverProcess.killed) {
-        console.warn("Server did not stop gracefully, forcing shutdown...");
-        serverProcess.kill("SIGKILL");
-      }
-    }, 5000);
-
-    // Handle process exit
-    serverProcess.on("exit", (code, signal) => {
-      clearTimeout(gracefulTimeout);
-      console.log(`Server stopped (code: ${code}, signal: ${signal})`);
-      serverProcess = null;
-      resolve();
     });
-  });
+  } catch (error) {
+    console.error("Error initializing server:", error);
+    throw error;
+  }
 };
 
+/**
+ * Verify server health by making HTTP request to health endpoint.
+ */
 const checkServerHealth = async (): Promise<boolean> => {
   const maxRetries = 5;
   const retryDelay = 1000;
@@ -134,7 +107,7 @@ const checkServerHealth = async (): Promise<boolean> => {
     try {
       const response = await fetch("http://localhost:3000/health");
       if (response.ok) {
-        console.log("✓ Connected! Server health check passed");
+        console.log("✓ Server health check passed");
         return true;
       }
     } catch (error) {
@@ -146,40 +119,54 @@ const checkServerHealth = async (): Promise<boolean> => {
   return false;
 };
 
+/**
+ * Create the Electron browser window.
+ */
 const createWindow = (): void => {
+  const isDev = !app.isPackaged;
+
+  // Preload script must be outside ASAR (security requirement)
+  const preloadPath = isDev
+    ? path.join(__dirname, "dist-electron", "preload.js")
+    : path.join(
+        process.resourcesPath,
+        "app.asar.unpacked",
+        "dist-electron",
+        "preload.js",
+      );
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
 
   // Load dev server URL (Vite runs on port 5173)
-  const isDev = !app.isPackaged;
+  // In production, load from ASAR (Electron can read files inside ASAR archives)
   const url = isDev
     ? "http://localhost:5173"
-    : `file://${path.join(__dirname, "../dist/index.html")}`;
+    : `file://${path.join(__dirname, "dist", "index.html")}`;
+
   mainWindow.loadURL(url);
 };
 
+// Application initialization
 app.whenReady().then(async () => {
   try {
-    // Start server
+    setupLogging();
+
+    // Start Express server in main process
     await startServer();
 
     // Verify server is healthy
     const isHealthy = await checkServerHealth();
 
     if (!isHealthy) {
-      const isDev = !app.isPackaged;
-      const errorMessage = isDev
-        ? "The backend server is not responding. Make sure you started the app with 'pnpm dev:all' which runs both frontend and backend.\n\nThe application will now exit."
-        : "The backend server could not start. Please check the logs and try again.\n\nThe application will now exit.";
-
-      dialog.showErrorBox("Server Failed to Start", errorMessage);
+      console.error("Server failed health check. Exiting.");
       app.quit();
       return;
     }
@@ -193,17 +180,14 @@ app.whenReady().then(async () => {
       }
     });
   } catch (error) {
-    console.error("Failed to start application:", error);
-    dialog.showErrorBox(
-      "Application Startup Failed",
-      `An error occurred while starting the application:\n\n${error instanceof Error ? error.message : String(error)}\n\nThe application will now exit.`,
-    );
+    console.error("Failed to start application:", error instanceof Error ? error.stack || error.message : String(error));
     app.quit();
   }
 });
 
+// Gracefully shutdown server when app quits
 app.on("window-all-closed", async () => {
-  await stopServer();
+  await shutdownServer();
   if (process.platform !== "darwin") {
     app.quit();
   }
@@ -211,9 +195,10 @@ app.on("window-all-closed", async () => {
 
 // Ensure cleanup on app quit
 app.on("before-quit", async (event) => {
-  if (serverProcess) {
+  if (httpServer) {
     event.preventDefault(); // Prevent immediate quit
-    await stopServer();
+    await shutdownServer();
+    httpServer = null;
     app.quit(); // Now quit after cleanup
   }
 });

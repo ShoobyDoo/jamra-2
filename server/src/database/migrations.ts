@@ -11,8 +11,8 @@ export const runMigrations = (db: Database.Database): void => {
     let schemaPath: string;
 
     if (process.env.ELECTRON_PACKAGED === 'true' && process.env.RESOURCES_PATH) {
-      // Production: schema.sql is in the resources directory
-      schemaPath = path.join(process.env.RESOURCES_PATH, 'schema.sql');
+      // Production: schema.sql is in the resources/server directory
+      schemaPath = path.join(process.env.RESOURCES_PATH, 'server', 'schema.sql');
     } else {
       // Development: schema.sql is in the server/src/database directory
       schemaPath = path.join(process.cwd(), 'server', 'src', 'database', 'schema.sql');

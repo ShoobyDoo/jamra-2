@@ -36,3 +36,10 @@ server/dist
 *.njsproj
 *.sln
 *.sw?
+
+# production builds
+out/*
+release/
+
+# ai/llm related
+.claude/

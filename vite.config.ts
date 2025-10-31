@@ -12,6 +12,24 @@ export default defineConfig({
       {
         // Main process entry
         entry: "electron/main.ts",
+        vite: {
+          build: {
+            rollupOptions: {
+              // Externalize all server dependencies to avoid bundling issues
+              // These will be loaded from node_modules at runtime
+              external: [
+                // Server dependencies (CommonJS packages)
+                "express",
+                "cors",
+                "ws",
+                // Native module (must be external)
+                "better-sqlite3",
+                // Server code itself
+                /^\.\.\/server\/dist/,
+              ],
+            },
+          },
+        },
       },
       {
         // Preload script entry

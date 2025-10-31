@@ -9,13 +9,15 @@
     "dev:server": "tsx watch server/src/index.ts",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\" --names \"frontend,backend\" --prefix-colors \"cyan,magenta\" --kill-others",
     "build": "tsc -b && vite build",
-    "build:server": "tsc -p server/tsconfig.json",
-    "build:electron": "electron-builder",
-    "build:all": "pnpm build:server && pnpm build && pnpm build:electron",
-    "build:clean": "rm -rf dist dist-electron server/dist dist-electron-build .electron-cache",
+    "build:server": "cd server && tsc -p tsconfig.json",
+    "build:clean": "rm -rf dist dist-electron out server/dist",
     "generate:icons": "node scripts/generate-icons.js",
     "lint": "eslint .",
     "preview": "vite preview",
+    "make": "pnpm build && pnpm build:server && electron-builder --win",
+    "dist:win": "pnpm build && pnpm build:server && electron-builder --win",
+    "dist:mac": "pnpm build && pnpm build:server && electron-builder --mac",
+    "dist:linux": "pnpm build && pnpm build:server && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
@@ -27,7 +29,7 @@
     "@tabler/icons-react": "^3.35.0",
     "@tailwindcss/vite": "^4.1.16",
     "@tanstack/react-query": "^5.90.5",
-    "better-sqlite3": "^12.2.0",
+    "better-sqlite3": "^12.4.1",
     "cors": "^2.8.5",
     "dayjs": "^1.11.18",
     "express": "^5.1.0",
@@ -39,6 +41,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    
     "@eslint/js": "^9.36.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@tanstack/react-query-devtools": "^5.90.2",
@@ -52,11 +55,11 @@
     "@vitejs/plugin-react": "^5.1.0",
     "concurrently": "^9.2.1",
     "electron": "^38.3.0",
-    "electron-builder": "^26.1.0",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.4.0",
+    "electron-builder": "^25.1.8",
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
@@ -78,7 +81,6 @@
     "onlyBuiltDependencies": [
       "better-sqlite3",
       "electron",
-      "electron-winstaller",
       "esbuild"
     ]
   }
