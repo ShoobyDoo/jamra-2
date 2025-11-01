@@ -4,13 +4,13 @@
  */
 
 import {
-  WS_URL,
-  WS_RECONNECT_INTERVAL,
+  WS_EVENTS,
   WS_MAX_RECONNECT_ATTEMPTS,
   WS_RECONNECT_BACKOFF_MULTIPLIER,
-  WS_EVENTS,
+  WS_RECONNECT_INTERVAL,
+  WS_URL,
   type WSEventType,
-} from '../constants/websocket';
+} from "../constants/websocket";
 
 /**
  * WebSocket Event Data
@@ -41,15 +41,15 @@ class WebSocketClient {
    */
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('WebSocket already connected');
+      console.log("WebSocket already connected");
       return;
     }
 
-    console.log('Connecting to WebSocket server...');
+    console.log("Connecting to WebSocket server...");
     this.ws = new WebSocket(WS_URL);
 
     this.ws.onopen = () => {
-      console.log('✅ WebSocket connected');
+      console.log("✅ WebSocket connected");
       this.reconnectAttempts = 0;
       this.emit(WS_EVENTS.CONNECT, { connected: true });
     };
@@ -59,17 +59,17 @@ class WebSocketClient {
         const message: WSMessage = JSON.parse(event.data);
         this.handleMessage(message);
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
       this.emit(WS_EVENTS.ERROR, { error });
     };
 
     this.ws.onclose = () => {
-      console.log('❌ WebSocket disconnected');
+      console.log("❌ WebSocket disconnected");
       this.emit(WS_EVENTS.DISCONNECT, { connected: false });
 
       // Auto-reconnect if not intentional close
@@ -90,7 +90,7 @@ class WebSocketClient {
     }
     this.ws?.close();
     this.ws = null;
-    console.log('WebSocket disconnected intentionally');
+    console.log("WebSocket disconnected intentionally");
   }
 
   /**
@@ -98,7 +98,7 @@ class WebSocketClient {
    */
   private attemptReconnect(): void {
     if (this.reconnectAttempts >= WS_MAX_RECONNECT_ATTEMPTS) {
-      console.error('Max reconnection attempts reached');
+      console.error("Max reconnection attempts reached");
       return;
     }
 
@@ -108,7 +108,7 @@ class WebSocketClient {
       Math.pow(WS_RECONNECT_BACKOFF_MULTIPLIER, this.reconnectAttempts - 1);
 
     console.log(
-      `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${WS_MAX_RECONNECT_ATTEMPTS})...`
+      `Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${WS_MAX_RECONNECT_ATTEMPTS})...`,
     );
 
     this.reconnectTimeout = setTimeout(() => {
@@ -166,7 +166,7 @@ class WebSocketClient {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ event, data, timestamp: Date.now() }));
     } else {
-      console.warn('WebSocket not connected, cannot send message');
+      console.warn("WebSocket not connected, cannot send message");
     }
   }
 

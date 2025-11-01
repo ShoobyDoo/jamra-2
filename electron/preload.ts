@@ -1,10 +1,10 @@
-import { contextBridge } from 'electron';
+import { contextBridge } from "electron";
 
 // Minimal preload script
 // In REST API architecture, most communication happens via HTTP
 // This can be extended later for Electron-specific features (file dialogs, etc.)
 
-contextBridge.exposeInMainWorld('electron', {
+contextBridge.exposeInMainWorld("electron", {
   // TODO: Add Electron-specific APIs if needed
   platform: process.platform,
 });

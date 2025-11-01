@@ -1,4 +1,4 @@
-import type { Chapter, CreateChapterInput } from '../types/chapter.types.js';
+import type { Chapter, CreateChapterInput } from "../types/chapter.types.js";
 
 export const chapterService = {
   getAll: async (): Promise<Chapter[]> => {
@@ -18,11 +18,11 @@ export const chapterService = {
 
   create: async (data: CreateChapterInput): Promise<Chapter> => {
     // TODO: Insert into database
-    throw new Error('Not implemented');
+    throw new Error("Not implemented");
   },
 
   delete: async (id: string): Promise<void> => {
     // TODO: Delete from database
-    throw new Error('Not implemented');
+    throw new Error("Not implemented");
   },
 };

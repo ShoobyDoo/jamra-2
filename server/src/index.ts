@@ -88,7 +88,7 @@ export const shutdownServer = (): Promise<void> => {
 
     // 1. Stop accepting new connections and proactively destroy keep-alive sockets
     for (const socket of openSockets) {
-      try { socket.destroy(); } catch {}
+      try { socket.destroy(); } catch (err) { console.warn('Error destroying socket', err); }
       openSockets.delete(socket);
     }
 

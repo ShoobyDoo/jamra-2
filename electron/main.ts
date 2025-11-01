@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from "electron";
-import path from "path";
 import fs from "fs";
 import { Server as HttpServer } from "http";
+import path from "path";
 import { initializeServer, shutdownServer } from "../server/dist/index.js";
 
 // No Squirrel handlers — Electron Builder (NSIS/portable) is used on Windows
@@ -13,37 +13,88 @@ const writeLog = (level: string, ...parts: unknown[]): void => {
   if (!logFilePath) return;
   const ts = new Date().toISOString();
   const msg = parts
-    .map((p) => (typeof p === "string" ? p : (() => { try { return JSON.stringify(p); } catch { return String(p); } })()))
+    .map((p) =>
+      typeof p === "string"
+        ? p
+        : (() => {
+            try {
+              return JSON.stringify(p);
+            } catch {
+              return String(p);
+            }
+          })(),
+    )
     .join(" ");
   try {
     fs.appendFileSync(logFilePath, `[${ts}] [${level}] ${msg}\n`);
-  } catch {}
+  } catch {
+    // Swallow logging errors (e.g., disk full). Intentionally no-op.
+    void 0;
+  }
 };
 // Catch errors as early as possible, before app is ready
-process.on("uncaughtException", (error) => {
-  const e = error instanceof Error ? error.stack || error.message : String(error);
-  earlyBuffer.push(`[${new Date().toISOString()}] [FATAL] uncaughtException ${e}`);
+process.on("uncaughtException", (error: unknown) => {
+  const e =
+    error instanceof Error ? error.stack || error.message : String(error);
+  earlyBuffer.push(
+    `[${new Date().toISOString()}] [FATAL] uncaughtException ${e}`,
+  );
 });
-process.on("unhandledRejection", (reason) => {
-  const r = typeof reason === "string" ? reason : (() => { try { return JSON.stringify(reason); } catch { return String(reason); } })();
-  earlyBuffer.push(`[${new Date().toISOString()}] [FATAL] unhandledRejection ${r}`);
+process.on("unhandledRejection", (reason: unknown) => {
+  const r =
+    typeof reason === "string"
+      ? reason
+      : (() => {
+          try {
+            return JSON.stringify(reason);
+          } catch {
+            return String(reason);
+          }
+        })();
+  earlyBuffer.push(
+    `[${new Date().toISOString()}] [FATAL] unhandledRejection ${r}`,
+  );
 });
 const setupLogging = (): void => {
   try {
     const logsDir = path.join(app.getPath("userData"), "logs");
     if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
     logFilePath = path.join(logsDir, "main.log");
-    const orig = { ...console } as any;
-    console.log = (...a: any[]) => { writeLog("INFO", ...a); orig.log(...a); };
-    console.info = (...a: any[]) => { writeLog("INFO", ...a); orig.info(...a); };
-    console.warn = (...a: any[]) => { writeLog("WARN", ...a); orig.warn(...a); };
-    console.error = (...a: any[]) => { writeLog("ERROR", ...a); orig.error(...a); };
+    const orig = {
+      log: console.log.bind(console),
+      info: console.info.bind(console),
+      warn: console.warn.bind(console),
+      error: console.error.bind(console),
+    };
+    console.log = (...a: unknown[]) => {
+      writeLog("INFO", ...a);
+      (orig.log as (...args: unknown[]) => void)(...a);
+    };
+    console.info = (...a: unknown[]) => {
+      writeLog("INFO", ...a);
+      (orig.info as (...args: unknown[]) => void)(...a);
+    };
+    console.warn = (...a: unknown[]) => {
+      writeLog("WARN", ...a);
+      (orig.warn as (...args: unknown[]) => void)(...a);
+    };
+    console.error = (...a: unknown[]) => {
+      writeLog("ERROR", ...a);
+      (orig.error as (...args: unknown[]) => void)(...a);
+    };
     // Flush any early buffered errors
     if (earlyBuffer.length) {
-      try { fs.appendFileSync(logFilePath, earlyBuffer.join("\n") + "\n"); } catch {}
+      try {
+        fs.appendFileSync(logFilePath, earlyBuffer.join("\n") + "\n");
+      } catch (err) {
+        console.warn("Failed to flush early log buffer:", err);
+      }
       earlyBuffer.length = 0;
     }
-  } catch {}
+  } catch (err) {
+    // If logger setup fails, continue without file logging but record once to console.
+    console.warn("Logger setup failed:", err);
+  }
 };
 
 // Use Electron's app.getAppPath() as an equivalent for __dirname
@@ -85,12 +136,12 @@ const startServer = async (): Promise<void> => {
         resolve();
       });
 
-      server.on("error", (error) => {
+      server.on("error", (error: unknown) => {
         console.error("Failed to start server:", error);
         reject(error);
       });
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error initializing server:", error);
     throw error;
   }
@@ -107,10 +158,10 @@ const checkServerHealth = async (): Promise<boolean> => {
     try {
       const response = await fetch("http://localhost:3000/health");
       if (response.ok) {
-        console.log("✓ Server health check passed");
+        console.log("✅ Server health check passed");
         return true;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.log(`Health check attempt ${i + 1}/${maxRetries} failed:`, error);
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
@@ -136,8 +187,8 @@ const createWindow = (): void => {
       );
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1280,
+    height: 720,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -149,12 +200,13 @@ const createWindow = (): void => {
   });
 
   // Load dev server URL (Vite runs on port 5173)
-  // In production, load from ASAR (Electron can read files inside ASAR archives)
-  const url = isDev
-    ? "http://localhost:5173"
-    : `file://${path.join(__dirname, "dist", "index.html")}`;
-
-  mainWindow.loadURL(url);
+  // In production, load index.html by file path for cross‑platform correctness
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173");
+  } else {
+    const indexPath = path.join(__dirname, "dist", "index.html");
+    mainWindow.loadFile(indexPath);
+  }
 };
 
 // Application initialization
@@ -165,7 +217,9 @@ app.whenReady().then(async () => {
       app.setAppUserModelId("com.jamra.reader");
       app.setName("Jamra Manga Reader");
       process.title = "Jamra Manga Reader (Main)";
-    } catch {}
+    } catch (err) {
+      console.warn("Failed to set app identity:", err);
+    }
 
     setupLogging();
 
@@ -189,8 +243,11 @@ app.whenReady().then(async () => {
         createWindow();
       }
     });
-  } catch (error) {
-    console.error("Failed to start application:", error instanceof Error ? error.stack || error.message : String(error));
+  } catch (error: unknown) {
+    console.error(
+      "Failed to start application:",
+      error instanceof Error ? error.stack || error.message : String(error),
+    );
     app.quit();
   }
 });
@@ -209,7 +266,12 @@ app.on("before-quit", async (event) => {
     event.preventDefault(); // Prevent immediate quit
     // Force-exit fallback in case of stubborn sockets
     const forceExit = setTimeout(() => {
-      try { app.exit(0); } catch { process.exit(0); }
+      try {
+        app.exit(0);
+      } catch (err) {
+        console.warn("app.exit failed, forcing process.exit(0)", err);
+        process.exit(0);
+      }
     }, 8000);
     await shutdownServer();
     httpServer = null;

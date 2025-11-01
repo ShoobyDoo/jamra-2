@@ -37,6 +37,7 @@ export default defineConfig({
         // Build preload as CommonJS so Electron can load it without `type: module`
         // This avoids "Cannot use import statement outside a module" on some hosts
         vite: {
+          logLevel: "warn",
           build: {
             lib: {
               entry: "electron/preload.ts",
