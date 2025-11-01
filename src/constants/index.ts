@@ -10,7 +10,6 @@ export { API_BASE_URL, ENDPOINTS } from './api';
 export {
   STALE_TIME,
   GC_TIME,
-  DOWNLOAD_POLL_INTERVAL,
   MAX_QUERY_RETRIES,
   MAX_MUTATION_RETRIES,
 } from './query';

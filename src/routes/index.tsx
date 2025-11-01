@@ -5,13 +5,41 @@ import { LazyPage } from "./LazyPage";
 import { ROUTES } from "./routes.config";
 
 // Lazy load pages for code splitting
-const LibraryPage = lazy(() => import("../pages/LibraryPage").then(module => ({ default: module.LibraryPage })));
-const MangaDetailsPage = lazy(() => import("../pages/MangaDetailsPage").then(module => ({ default: module.MangaDetailsPage })));
-const ReaderPage = lazy(() => import("../pages/ReaderPage").then(module => ({ default: module.ReaderPage })));
-const DownloadsPage = lazy(() => import("../pages/DownloadsPage").then(module => ({ default: module.DownloadsPage })));
-const SettingsPage = lazy(() => import("../pages/SettingsPage").then(module => ({ default: module.SettingsPage })));
-const NotFoundPage = lazy(() => import("../pages/NotFoundPage").then(module => ({ default: module.NotFoundPage })));
-const ErrorPage = lazy(() => import("../pages/ErrorPage").then(module => ({ default: module.ErrorPage })));
+const LibraryPage = lazy(() =>
+  import("../pages/LibraryPage").then((module) => ({
+    default: module.LibraryPage,
+  })),
+);
+const MangaDetailsPage = lazy(() =>
+  import("../pages/MangaDetailsPage").then((module) => ({
+    default: module.MangaDetailsPage,
+  })),
+);
+const ReaderPage = lazy(() =>
+  import("../pages/ReaderPage").then((module) => ({
+    default: module.ReaderPage,
+  })),
+);
+const DownloadsPage = lazy(() =>
+  import("../pages/DownloadsPage").then((module) => ({
+    default: module.DownloadsPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("../pages/SettingsPage").then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
+const NotFoundPage = lazy(() =>
+  import("../pages/NotFoundPage").then((module) => ({
+    default: module.NotFoundPage,
+  })),
+);
+const ErrorPage = lazy(() =>
+  import("../pages/ErrorPage").then((module) => ({
+    default: module.ErrorPage,
+  })),
+);
 
 /**
  * Manga Reader Route Configuration

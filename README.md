@@ -147,7 +147,6 @@ Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/
 - **useLibraryStore** - Library UI state (view mode, selection, sorting)
 - **useReaderStore** - Reader state (current page, fullscreen)
 - **useSettingsStore** - App settings (persisted to localStorage)
-- **useDownloadStore** - Download queue state
 - **useUIStore** - Global UI state (modals, sidebars)
 
 ### TanStack Query (Server State)

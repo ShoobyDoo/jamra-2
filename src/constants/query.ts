@@ -10,17 +10,10 @@
 export const STALE_TIME = 1000 * 60 * 5;
 
 /**
- * Garbage collection time (10 minutes)
+ * Garbage collection time (15 minutes)
  * How long unused/inactive query data stays in cache before removal
  */
-export const GC_TIME = 1000 * 60 * 10;
-
-/**
- * Download queue polling interval (2 seconds)
- * DEPRECATED: Will be replaced by WebSocket real-time updates
- * @deprecated Use WebSocket events instead
- */
-export const DOWNLOAD_POLL_INTERVAL = 2000;
+export const GC_TIME = 1000 * 60 * 15;
 
 /**
  * Maximum retry attempts for failed queries

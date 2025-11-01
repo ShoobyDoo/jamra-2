@@ -1,6 +1,7 @@
 # Mantine v8.3.5 Developer Guide
 
 ## Project Stack
+
 - **Mantine**: v8.3.5 (@mantine/core, @mantine/dates, @mantine/dropzone, @mantine/hooks, @mantine/notifications)
 - **React**: 19.1.1
 - **TailwindCSS**: 4.1.16
@@ -16,6 +17,7 @@
 ## Code Standards & Architecture
 
 ### Component Export Pattern
+
 **ALWAYS use named exports with React.FC annotation:**
 
 ```tsx
@@ -42,12 +44,14 @@ export default MyComponent;
 ```
 
 **Rationale:**
+
 - Named exports enforce consistent naming across imports
 - Better for tree-shaking and refactoring tools
 - Prevents import renaming inconsistencies
 - React.FC provides explicit typing for component props and return type
 
 ### Function Declaration Pattern
+
 **ALWAYS use const arrow functions:**
 
 ```tsx
@@ -61,26 +65,27 @@ const handleSubmit = (values: FormValues) => {
 };
 
 // ✗ WRONG
-function handleClick() { }
-function handleSubmit(values: FormValues) { }
+function handleClick() {}
+function handleSubmit(values: FormValues) {}
 ```
 
 ### API Endpoint Constants
+
 **Use centralized ENDPOINTS for multi-use API routes:**
 
 ```tsx
 // ✓ CORRECT - Import from constants
-import { ENDPOINTS } from '@/constants/api';
+import { ENDPOINTS } from "@/constants/api";
 
 const { data } = useQuery({
-  queryKey: ['library'],
+  queryKey: ["library"],
   queryFn: () => apiClient.get(ENDPOINTS.LIBRARY),
 });
 
 // ✗ WRONG - Hardcoded strings (only acceptable for single-use endpoints)
 const { data } = useQuery({
-  queryKey: ['library'],
-  queryFn: () => apiClient.get('/library'),
+  queryKey: ["library"],
+  queryFn: () => apiClient.get("/library"),
 });
 ```
 
@@ -89,6 +94,7 @@ const { data } = useQuery({
 ### State Management Architecture
 
 #### Server State: TanStack Query
+
 **Use TanStack Query for ALL server data:**
 
 ```tsx
@@ -105,6 +111,7 @@ const MyComponent: React.FC = () => {
 ```
 
 **Benefits:**
+
 - Automatic caching and cache invalidation
 - Built-in loading and error states
 - Automatic refetching (window focus, reconnect, intervals)
@@ -113,10 +120,11 @@ const MyComponent: React.FC = () => {
 - Stale-while-revalidate pattern
 
 #### UI State: Zustand
+
 **Use Zustand ONLY for UI-specific state:**
 
 ```tsx
-import { useUIStore } from '@/store/useUIStore';
+import { useUIStore } from "@/store/useUIStore";
 
 const MyComponent: React.FC = () => {
   const { isModalOpen, openModal, closeModal } = useUIStore();
@@ -126,6 +134,7 @@ const MyComponent: React.FC = () => {
 ```
 
 **Appropriate Zustand Use Cases:**
+
 - Modal open/closed state
 - Sidebar collapsed/expanded
 - Theme preferences
@@ -133,17 +142,16 @@ const MyComponent: React.FC = () => {
 - Current page in reader
 
 **❌ NEVER use Zustand for server data** (downloads, manga, chapters, library)
-- See `src/store/useDownloadStore.ts` for detailed anti-pattern documentation
 
 ### Real-Time Updates: WebSocket
 
 **Use WebSocket for real-time server events instead of polling:**
 
 ```tsx
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { useDownloadQueue } from '@/hooks/queries/useDownloadQueries';
-import { WS_EVENTS } from '@/constants/websocket';
-import type { DownloadProgressPayload } from '@/types';
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { useDownloadQueue } from "@/hooks/queries/useDownloadQueries";
+import { WS_EVENTS } from "@/constants/websocket";
+import type { DownloadProgressPayload } from "@/types";
 
 const DownloadsPage: React.FC = () => {
   // Get initial data from TanStack Query
@@ -151,7 +159,7 @@ const DownloadsPage: React.FC = () => {
 
   // Subscribe to real-time updates
   const progressUpdate = useWebSocket<DownloadProgressPayload>(
-    WS_EVENTS.DOWNLOAD_PROGRESS
+    WS_EVENTS.DOWNLOAD_PROGRESS,
   );
 
   // Invalidate cache when WebSocket event received
@@ -167,6 +175,7 @@ const DownloadsPage: React.FC = () => {
 ```
 
 **WebSocket Events Available:**
+
 - `WS_EVENTS.DOWNLOAD_STARTED`
 - `WS_EVENTS.DOWNLOAD_PROGRESS`
 - `WS_EVENTS.DOWNLOAD_PAGE_COMPLETE`
@@ -175,6 +184,7 @@ const DownloadsPage: React.FC = () => {
 - `WS_EVENTS.DOWNLOAD_CANCELLED`
 
 **Connection Management:**
+
 - Auto-connects on app start
 - Auto-reconnects with exponential backoff
 - Max 10 reconnection attempts
@@ -194,8 +204,9 @@ src/constants/
 ```
 
 **Usage:**
+
 ```tsx
-import { ENDPOINTS, WS_EVENTS, STALE_TIME } from '@/constants';
+import { ENDPOINTS, WS_EVENTS, STALE_TIME } from "@/constants";
 ```
 
 ---
@@ -205,11 +216,11 @@ import { ENDPOINTS, WS_EVENTS, STALE_TIME } from '@/constants';
 All Mantine components use standard npm imports:
 
 ```tsx
-import { Button, TextInput, Modal } from '@mantine/core';
-import { useDisclosure, useCounter } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
-import { DatePicker } from '@mantine/dates';
-import { Dropzone } from '@mantine/dropzone';
+import { Button, TextInput, Modal } from "@mantine/core";
+import { useDisclosure, useCounter } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { DatePicker } from "@mantine/dates";
+import { Dropzone } from "@mantine/dropzone";
 ```
 
 ---
@@ -217,7 +228,9 @@ import { Dropzone } from '@mantine/dropzone';
 ## Styling Philosophy: Mantine + TailwindCSS Coexistence
 
 ### Primary Rule
+
 **Always use TailwindCSS for custom styling** as per project guidelines. Use Mantine's styling system only when:
+
 - Customizing Mantine component internals via Styles API
 - Using Mantine's CSS Variables for theming
 - Applying data attributes for state-based styling
@@ -225,12 +238,14 @@ import { Dropzone } from '@mantine/dropzone';
 ### Mantine's Three Styling Approaches
 
 1. **CSS Modules** (for component internals)
+
 ```tsx
 // Static selectors: .mantine-Button-root, .mantine-Modal-header
-<Button classNames={{ root: 'custom-class' }} />
+<Button classNames={{ root: "custom-class" }} />
 ```
 
 2. **CSS Variables** (for dynamic theming)
+
 ```css
 /* Mantine theme variables */
 var(--mantine-color-blue-6)
@@ -239,6 +254,7 @@ var(--mantine-radius-sm)
 ```
 
 3. **Data Attributes** (for conditional states)
+
 ```tsx
 /* Use in CSS/Tailwind */
 [data-disabled] { opacity: 0.5; }
@@ -246,6 +262,7 @@ var(--mantine-radius-sm)
 ```
 
 ### Integration Pattern
+
 ```tsx
 // Good: TailwindCSS for layout, Mantine props for component behavior
 <Button className="mt-4 w-full" size="lg" variant="filled">
@@ -265,10 +282,12 @@ var(--mantine-radius-sm)
 ### Color Palette
 
 **Core Colors (General UI):**
+
 - Neutrals: Black, white, and gray shades for backgrounds, text, and standard UI elements
 - Use neutral colors for content areas, cards, text, and standard interactive elements
 
 **Navigation Accent:**
+
 - Blue-to-indigo gradient (`bg-linear-to-r from-blue-600 to-indigo-700`) for navigation elements only
 - Currently applied to: AppShell.Header and AppShell.Navbar
 - White text for contrast on gradient backgrounds
@@ -278,21 +297,24 @@ var(--mantine-radius-sm)
 The AppLayout implements a 24px inverted corner radius at the top-left of the main content area, creating a visual "scoop" effect where the gradient navigation flows into the white content area.
 
 **Implementation:**
+
 ```tsx
 <AppShell.Main className="relative">
-  <div className="absolute top-0 left-0 h-6 w-6 bg-white pointer-events-none z-10">
-    <div className="absolute top-0 left-0 h-6 w-6 bg-linear-to-br from-blue-600 to-indigo-700 rounded-tl-3xl" />
+  <div className="pointer-events-none absolute top-0 left-0 z-10 h-6 w-6 bg-white">
+    <div className="absolute top-0 left-0 h-6 w-6 rounded-tl-3xl bg-linear-to-br from-blue-600 to-indigo-700" />
   </div>
   <Outlet />
 </AppShell.Main>
 ```
 
 **How it works:**
+
 1. Outer div: 24px × 24px positioned at top-left with content background color
 2. Inner div: 24px × 24px with navigation gradient background and rounded top-left corner
 3. The rounded corner creates the "inverted" or "scooped" visual effect
 
 **Important Notes:**
+
 - Before implementing new color schemes, always analyze existing design patterns in the codebase
 - The blue gradient is currently limited to navigation elements only
 - Future design expansions should maintain visual consistency with established patterns
@@ -302,11 +324,13 @@ The AppLayout implements a 24px inverted corner radius at the top-left of the ma
 ## Component Categories
 
 ### Layout & Shell
+
 - **AppShell**: Responsive app layout (header, navbar, aside, footer)
 - **AspectRatio**: Maintains width/height ratios
 - **Affix**: Fixed-position elements via Portal
 
 ### Interactive Components
+
 - **Accordion**: Collapsible sections with keyboard nav
 - **ActionIcon**: Icon-only buttons (requires aria-label)
 - **Autocomplete**: Text input with suggestions (not enforced select)
@@ -315,12 +339,14 @@ The AppLayout implements a 24px inverted corner radius at the top-left of the ma
 - **Tabs**: Content switching interface
 
 ### Form Components
+
 - **TextInput**, **NumberInput**, **Textarea**
 - **Select**, **MultiSelect**, **Checkbox**, **Radio**
 - **DatePicker** (from @mantine/dates)
 - **Dropzone** (from @mantine/dropzone)
 
 ### Data Display
+
 - **Table**, **Card**, **Badge**, **Avatar**
 - **Progress**, **Loader**, **Skeleton**
 
@@ -329,6 +355,7 @@ The AppLayout implements a 24px inverted corner radius at the top-left of the ma
 ## Key Component Patterns
 
 ### 1. Polymorphic Components
+
 Components can change their root element via `component` prop:
 
 ```tsx
@@ -361,6 +388,7 @@ const [activeItem, setActiveItem] = useState<string | null>(null);
 ```
 
 **Follow Project Guidelines**: Use `const` instead of `function`, name handlers with "handle" prefix:
+
 ```tsx
 const handleChange = (value: string) => {
   setValue(value);
@@ -387,6 +415,7 @@ Multiple patterns for breakpoint-based values:
 ## Accessibility Requirements
 
 ### Critical: Icon-Only Components
+
 **Always provide aria-label for icon-only buttons**:
 
 ```tsx
@@ -402,20 +431,23 @@ Multiple patterns for breakpoint-based values:
 ```
 
 ### Keyboard Support
+
 Mantine handles automatically:
+
 - Arrow keys for navigation (Accordion, Tabs, Select)
 - Enter/Space for activation
 - Escape for closing modals/dropdowns
 
 ### Screen Reader Labels
+
 ```tsx
-<Modal closeButtonLabel="Close modal">
-  {/* content */}
-</Modal>
+<Modal closeButtonLabel="Close modal">{/* content */}</Modal>
 ```
 
 ### Follow Project Guidelines
+
 Implement full accessibility as specified:
+
 - tabindex="0" for custom interactive elements
 - aria-label for all icon-only elements
 - onClick + onKeyDown handlers
@@ -425,14 +457,14 @@ Implement full accessibility as specified:
 
 ## Common Props Across Components
 
-| Prop | Purpose | Example Values |
-|------|---------|----------------|
-| `size` | Controls dimensions | 'xs', 'sm', 'md', 'lg', 'xl' |
-| `radius` | Border-radius | 'xs', 'sm', 'md', 'lg', 'xl', CSS value |
-| `variant` | Predefined style | 'filled', 'outline', 'light', 'subtle' |
-| `color` | Theme color | 'blue', 'red', 'green', CSS value |
-| `disabled` | Prevents interaction | boolean |
-| `loading` | Shows loader | boolean |
+| Prop       | Purpose              | Example Values                          |
+| ---------- | -------------------- | --------------------------------------- |
+| `size`     | Controls dimensions  | 'xs', 'sm', 'md', 'lg', 'xl'            |
+| `radius`   | Border-radius        | 'xs', 'sm', 'md', 'lg', 'xl', CSS value |
+| `variant`  | Predefined style     | 'filled', 'outline', 'light', 'subtle'  |
+| `color`    | Theme color          | 'blue', 'red', 'green', CSS value       |
+| `disabled` | Prevents interaction | boolean                                 |
+| `loading`  | Shows loader         | boolean                                 |
 
 ---
 
@@ -441,11 +473,11 @@ Implement full accessibility as specified:
 ### With Redux Toolkit (Project Setup)
 
 ```tsx
-import { useAppDispatch, useAppSelector } from './store/hooks';
+import { useAppDispatch, useAppSelector } from "./store/hooks";
 
 const MyComponent = () => {
   const dispatch = useAppDispatch();
-  const data = useAppSelector(state => state.mySlice.data);
+  const data = useAppSelector((state) => state.mySlice.data);
 
   const handleSubmit = (values: FormValues) => {
     dispatch(updateData(values));
@@ -458,7 +490,7 @@ const MyComponent = () => {
 ### With Mantine Hooks
 
 ```tsx
-import { useDisclosure, useCounter, useToggle } from '@mantine/hooks';
+import { useDisclosure, useCounter, useToggle } from "@mantine/hooks";
 
 // Modal state
 const [opened, { open, close }] = useDisclosure(false);
@@ -467,7 +499,7 @@ const [opened, { open, close }] = useDisclosure(false);
 const [count, handlers] = useCounter(0, { min: 0, max: 10 });
 
 // Toggle
-const [value, toggle] = useToggle(['light', 'dark']);
+const [value, toggle] = useToggle(["light", "dark"]);
 ```
 
 ---
@@ -475,6 +507,7 @@ const [value, toggle] = useToggle(['light', 'dark']);
 ## Performance Optimization
 
 ### Large Datasets
+
 ```tsx
 // Limit displayed options
 <Autocomplete data={hugeArray} limit={50} />
@@ -488,6 +521,7 @@ const [value, toggle] = useToggle(['light', 'dark']);
 ```
 
 ### Early Returns (Project Guidelines)
+
 ```tsx
 const MyComponent = ({ data }: Props) => {
   // Early return for loading/error states
@@ -503,7 +537,7 @@ const MyComponent = ({ data }: Props) => {
 ## Ref Access Pattern
 
 ```tsx
-import { useRef } from 'react';
+import { useRef } from "react";
 
 const MyComponent = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -526,37 +560,37 @@ const MyComponent = () => {
 ## Notifications System
 
 ```tsx
-import { notifications } from '@mantine/notifications';
+import { notifications } from "@mantine/notifications";
 
 // Success notification
 notifications.show({
-  title: 'Success',
-  message: 'Operation completed',
-  color: 'green',
+  title: "Success",
+  message: "Operation completed",
+  color: "green",
 });
 
 // Error notification
 notifications.show({
-  title: 'Error',
-  message: 'Something went wrong',
-  color: 'red',
+  title: "Error",
+  message: "Something went wrong",
+  color: "red",
 });
 
 // Custom notification
 notifications.show({
-  id: 'load-data',
+  id: "load-data",
   loading: true,
-  title: 'Loading data',
-  message: 'Please wait...',
+  title: "Loading data",
+  message: "Please wait...",
   autoClose: false,
 });
 
 // Update notification
 notifications.update({
-  id: 'load-data',
-  color: 'teal',
-  title: 'Success',
-  message: 'Data loaded',
+  id: "load-data",
+  color: "teal",
+  title: "Success",
+  message: "Data loaded",
   loading: false,
   autoClose: 2000,
 });
@@ -569,13 +603,13 @@ notifications.update({
 ### ✓ DO
 
 1. **Use TailwindCSS for custom styling** (project standard)
+
 ```tsx
-<Button className="mt-4 w-full">
-  Submit
-</Button>
+<Button className="mt-4 w-full">Submit</Button>
 ```
 
 2. **Use const over function** (project standard)
+
 ```tsx
 const handleClick = () => {
   // logic
@@ -583,13 +617,15 @@ const handleClick = () => {
 ```
 
 3. **Name event handlers with "handle" prefix** (project standard)
+
 ```tsx
-const handleSubmit = (values: FormValues) => { };
-const handleChange = (value: string) => { };
-const handleKeyDown = (e: KeyboardEvent) => { };
+const handleSubmit = (values: FormValues) => {};
+const handleChange = (value: string) => {};
+const handleKeyDown = (e: KeyboardEvent) => {};
 ```
 
 4. **Provide aria-labels for icon-only components**
+
 ```tsx
 <ActionIcon aria-label="Close">
   <IconX />
@@ -597,20 +633,23 @@ const handleKeyDown = (e: KeyboardEvent) => { };
 ```
 
 5. **Use early returns for readability** (project standard)
+
 ```tsx
 if (!data) return <Loader />;
 if (error) return <ErrorMessage error={error} />;
 ```
 
 6. **Use controlled components with state management**
+
 ```tsx
-const [value, setValue] = useState('');
-<TextInput value={value} onChange={(e) => setValue(e.currentTarget.value)} />
+const [value, setValue] = useState("");
+<TextInput value={value} onChange={(e) => setValue(e.currentTarget.value)} />;
 ```
 
 ### ✗ AVOID
 
 1. **Don't nest interactive elements**
+
 ```tsx
 // Bad: Button inside Accordion.Control
 <Accordion.Control>
@@ -619,6 +658,7 @@ const [value, setValue] = useState('');
 ```
 
 2. **Don't mix styling approaches unnecessarily**
+
 ```tsx
 // Bad: Mixing inline styles with TailwindCSS
 <Button styles={{ root: { padding: '1rem' } }} className="p-4">
@@ -630,6 +670,7 @@ const [value, setValue] = useState('');
 ```
 
 3. **Don't forget accessibility**
+
 ```tsx
 // Bad: No aria-label
 <ActionIcon><IconSettings /></ActionIcon>
@@ -639,12 +680,13 @@ const [value, setValue] = useState('');
 ```
 
 4. **Don't use function declarations** (project standard)
+
 ```tsx
 // Bad
-function handleClick() { }
+function handleClick() {}
 
 // Good
-const handleClick = () => { };
+const handleClick = () => {};
 ```
 
 ---
@@ -654,40 +696,41 @@ const handleClick = () => { };
 ### Setup Requirements
 
 1. **MantineProvider** (should be in your app root)
-```tsx
-import { MantineProvider } from '@mantine/core';
-import '@mantine/core/styles.css';
 
-const App = () => (
-  <MantineProvider>
-    {/* your app */}
-  </MantineProvider>
-);
+```tsx
+import { MantineProvider } from "@mantine/core";
+import "@mantine/core/styles.css";
+
+const App = () => <MantineProvider>{/* your app */}</MantineProvider>;
 ```
 
 2. **Notifications Provider**
+
 ```tsx
-import { Notifications } from '@mantine/notifications';
-import '@mantine/notifications/styles.css';
+import { Notifications } from "@mantine/notifications";
+import "@mantine/notifications/styles.css";
 
 <MantineProvider>
   <Notifications />
   {/* your app */}
-</MantineProvider>
+</MantineProvider>;
 ```
 
 3. **Dates (DayJS)**
+
 ```tsx
-import '@mantine/dates/styles.css';
+import "@mantine/dates/styles.css";
 // DayJS already in dependencies (1.11.18)
 ```
 
 4. **Dropzone**
+
 ```tsx
-import '@mantine/dropzone/styles.css';
+import "@mantine/dropzone/styles.css";
 ```
 
 ### PostCSS Configuration
+
 Project uses `postcss-preset-mantine` for Mantine-specific transformations. This is already configured in your dev dependencies.
 
 ---
@@ -695,6 +738,7 @@ Project uses `postcss-preset-mantine` for Mantine-specific transformations. This
 ## Quick Reference: Common Components
 
 ### Button
+
 ```tsx
 <Button
   variant="filled" // 'filled' | 'outline' | 'light' | 'subtle'
@@ -705,13 +749,14 @@ Project uses `postcss-preset-mantine` for Mantine-specific transformations. This
   leftSection={<IconCheck />}
   rightSection={<IconArrowRight />}
   onClick={handleClick}
-  className="w-full mt-4" // TailwindCSS
+  className="mt-4 w-full" // TailwindCSS
 >
   Click Me
 </Button>
 ```
 
 ### TextInput
+
 ```tsx
 <TextInput
   label="Email"
@@ -727,6 +772,7 @@ Project uses `postcss-preset-mantine` for Mantine-specific transformations. This
 ```
 
 ### Modal
+
 ```tsx
 const [opened, { open, close }] = useDisclosure(false);
 
@@ -739,15 +785,16 @@ const [opened, { open, close }] = useDisclosure(false);
   closeButtonLabel="Close modal"
 >
   {/* content */}
-</Modal>
+</Modal>;
 ```
 
 ### Select
+
 ```tsx
 <Select
   label="Choose option"
   placeholder="Pick one"
-  data={['React', 'Vue', 'Angular']}
+  data={["React", "Vue", "Angular"]}
   value={value}
   onChange={setValue}
   searchable
@@ -756,6 +803,7 @@ const [opened, { open, close }] = useDisclosure(false);
 ```
 
 ### Accordion
+
 ```tsx
 <Accordion variant="separated">
   <Accordion.Item value="item-1">
@@ -770,31 +818,33 @@ const [opened, { open, close }] = useDisclosure(false);
 ```
 
 ### DatePicker
+
 ```tsx
-import { DatePicker } from '@mantine/dates';
+import { DatePicker } from "@mantine/dates";
 
 <DatePicker
   label="Pick date"
   value={value}
   onChange={setValue}
   minDate={new Date()}
-/>
+/>;
 ```
 
 ### Dropzone
+
 ```tsx
-import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
+import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 
 <Dropzone
-  onDrop={(files) => console.log('accepted', files)}
-  onReject={(files) => console.log('rejected', files)}
+  onDrop={(files) => console.log("accepted", files)}
+  onReject={(files) => console.log("rejected", files)}
   maxSize={5 * 1024 ** 2}
   accept={IMAGE_MIME_TYPE}
 >
   <div>
     <Text>Drag images here or click to select</Text>
   </div>
-</Dropzone>
+</Dropzone>;
 ```
 
 ---
@@ -802,18 +852,22 @@ import { Dropzone, IMAGE_MIME_TYPE } from '@mantine/dropzone';
 ## Troubleshooting
 
 ### Issue: Styles not applying
+
 **Solution**: Ensure CSS imports are present:
+
 ```tsx
-import '@mantine/core/styles.css';
-import '@mantine/notifications/styles.css';
-import '@mantine/dates/styles.css';
-import '@mantine/dropzone/styles.css';
+import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/dropzone/styles.css";
 ```
 
 ### Issue: TypeScript errors with polymorphic components
+
 **Solution**: Polymorphic component props differ from standard props. Use proper typing:
+
 ```tsx
-import { ButtonProps } from '@mantine/core';
+import { ButtonProps } from "@mantine/core";
 
 type MyButtonProps = ButtonProps & {
   customProp?: string;
@@ -821,12 +875,15 @@ type MyButtonProps = ButtonProps & {
 ```
 
 ### Issue: Mantine styles conflicting with TailwindCSS
+
 **Solution**: Use `postcss-preset-mantine` (already in dependencies). Mantine uses CSS layers to avoid conflicts.
 
 ### Issue: Components not responding to breakpoints
+
 **Solution**: Use object syntax for responsive values:
+
 ```tsx
-<Button size={{ base: 'sm', md: 'lg' }}>Responsive</Button>
+<Button size={{ base: "sm", md: "lg" }}>Responsive</Button>
 ```
 
 ---

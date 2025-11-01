@@ -1,5 +1,5 @@
 export const LAYOUT = {
-  HEADER_HEIGHT: 50,
-  NAVBAR_WIDTH: 70,
-  MAIN_PADDING: "py-3 px-4",
+  HEADER_HEIGHT: 48,
+  NAVBAR_WIDTH: 84,
+  MAIN_PADDING: "py-5 px-6",
 } as const;

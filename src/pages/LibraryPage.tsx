@@ -1,9 +1,9 @@
-import React from 'react';
-import { Title, Text } from '@mantine/core';
+import { Text, Title } from "@mantine/core";
+import React from "react";
 
 export const LibraryPage: React.FC = () => {
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-6xl">
       <Title order={1} className="mb-6">
         Library
       </Title>
