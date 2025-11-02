@@ -23,7 +23,7 @@ win:
       arch: [x64]
     - target: portable
       arch: [x64]
-  # icon: public/icon.ico  # Optional: provide a .ico to customize installer/app icon
+  icon: public/jamra_icon.ico
 nsis:
   oneClick: false
   perMachine: false

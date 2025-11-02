@@ -10,7 +10,7 @@ import {
 import React from "react";
 import { ROUTES } from "../../routes/routes.config";
 import { QueueButton } from "../download/QueueButton";
-import NavButton from "../ui/NavButton";
+import { NavButton } from "../ui/NavButton";
 
 /**
  * Navigation bar component with links to main application sections

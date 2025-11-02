@@ -8,6 +8,7 @@ import { Navbar } from "./layout/Navbar";
 export const AppLayout: React.FC = () => {
   return (
     <AppShell
+      className="h-screen overflow-hidden"
       withBorder={false}
       header={{ height: { base: LAYOUT.HEADER_HEIGHT } }}
       navbar={{
@@ -22,9 +23,9 @@ export const AppLayout: React.FC = () => {
       <AppShell.Navbar className="flex flex-1 items-center">
         <Navbar />
       </AppShell.Navbar>
-      <AppShell.Main className="flex">
+      <AppShell.Main className="flex h-full min-h-0 min-w-0 overflow-hidden">
         <div
-          className={`flex-1 rounded-tl-lg border-t border-l border-gray-200 ${LAYOUT.MAIN_PADDING}`}
+          className={`h-full min-h-0 flex-1 overflow-x-hidden overflow-y-auto rounded-tl-lg border-t border-l border-gray-200 ${LAYOUT.MAIN_PADDING}`}
         >
           <Outlet />
         </div>

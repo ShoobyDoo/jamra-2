@@ -11,7 +11,6 @@
     "build": "tsc -b && vite build",
     "build:server": "cd server && tsc -p tsconfig.json",
     "build:clean": "rm -rf dist dist-electron out server/dist",
-    "generate:icons": "node scripts/generate-icons.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "make": "pnpm build && pnpm build:server && electron-builder --win",
@@ -21,6 +20,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "@mantine/carousel": "^8.3.6",
     "@mantine/core": "^8.3.6",
     "@mantine/dates": "^8.3.6",
     "@mantine/dropzone": "^8.3.6",

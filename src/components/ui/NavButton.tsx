@@ -7,7 +7,7 @@ interface INavLink {
   icon: React.ForwardRefExoticComponent<IconProps & React.RefAttributes<Icon>>;
 }
 
-const NavButton: React.FC<INavLink> = ({ to, label, icon: NavIcon }) => {
+export const NavButton: React.FC<INavLink> = ({ to, label, icon: NavIcon }) => {
   return (
     <NavLink
       key={to}
@@ -28,5 +28,3 @@ const NavButton: React.FC<INavLink> = ({ to, label, icon: NavIcon }) => {
     </NavLink>
   );
 };
-
-export default NavButton;

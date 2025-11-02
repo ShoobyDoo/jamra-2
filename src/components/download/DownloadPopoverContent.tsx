@@ -51,7 +51,7 @@ export const DownloadPopoverContent: React.FC<DownloadPopoverContentProps> = ({
       {/* Header */}
       <Box className="flex items-center justify-between gap-2 border-b border-gray-200 p-3">
         <Text size="sm" fw={500}>
-          Queue ({activeDownloads.length})
+          Active Downloads Queue ({activeDownloads.length})
         </Text>
         <ActionIcon
           size="xs"

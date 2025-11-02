@@ -43,7 +43,7 @@ export const DOWNLOAD_RETRY_ATTEMPTS = 3;
  * UI Layout Options
  */
 export const LAYOUT = {
-  HEADER_HEIGHT: 48,
-  NAVBAR_WIDTH: 84,
+  HEADER_HEIGHT: 50,
+  NAVBAR_WIDTH: 90,
   MAIN_PADDING: "py-5 px-6",
 } as const;

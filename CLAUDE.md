@@ -71,13 +71,38 @@ function handleClick() {}
 function handleSubmit(values: FormValues) {}
 ```
 
+### Import Path Convention
+
+**NEVER use the '@' path alias. ALWAYS use literal relative paths:**
+
+```tsx
+// ✓ CORRECT - Use relative paths
+import { ContinueReadingCard } from "../components/home/ContinueReadingCard";
+import { useLibrary } from "../../hooks/queries/useLibraryQueries";
+import { ENDPOINTS } from "../constants/api";
+import type { Manga } from "../types";
+
+// ✗ WRONG - Do not use @ alias
+import { ContinueReadingCard } from "@/components/home/ContinueReadingCard";
+import { useLibrary } from "@/hooks/queries/useLibraryQueries";
+import { ENDPOINTS } from "@/constants/api";
+import type { Manga } from "@/types";
+```
+
+**Rationale:**
+
+- Path aliases require build tool configuration that breaks with external dependency changes
+- Too much maintenance overhead
+- Relative paths are explicit and always work
+- Better IDE support without configuration
+
 ### API Endpoint Constants
 
 **Use centralized ENDPOINTS for multi-use API routes:**
 
 ```tsx
 // ✓ CORRECT - Import from constants
-import { ENDPOINTS } from "@/constants/api";
+import { ENDPOINTS } from "../constants/api";
 
 const { data } = useQuery({
   queryKey: ["library"],
@@ -100,7 +125,7 @@ const { data } = useQuery({
 **Use TanStack Query for ALL server data:**
 
 ```tsx
-import { useLibrary } from '@/hooks/queries/useLibraryQueries';
+import { useLibrary } from "../../hooks/queries/useLibraryQueries";
 
 const MyComponent: React.FC = () => {
   const { data: library, isLoading, error } = useLibrary();
@@ -126,7 +151,7 @@ const MyComponent: React.FC = () => {
 **Use Zustand ONLY for UI-specific state:**
 
 ```tsx
-import { useUIStore } from "@/store/useUIStore";
+import { useUIStore } from "../store/useUIStore";
 
 const MyComponent: React.FC = () => {
   const { isModalOpen, openModal, closeModal } = useUIStore();
@@ -150,10 +175,10 @@ const MyComponent: React.FC = () => {
 **Use WebSocket for real-time server events instead of polling:**
 
 ```tsx
-import { useWebSocket } from "@/hooks/useWebSocket";
-import { useDownloadQueue } from "@/hooks/queries/useDownloadQueries";
-import { WS_EVENTS } from "@/constants/websocket";
-import type { DownloadProgressPayload } from "@/types";
+import { useWebSocket } from "../hooks/useWebSocket";
+import { useDownloadQueue } from "../hooks/queries/useDownloadQueries";
+import { WS_EVENTS } from "../constants/websocket";
+import type { DownloadProgressPayload } from "../types";
 
 const DownloadsPage: React.FC = () => {
   // Get initial data from TanStack Query
@@ -190,7 +215,7 @@ const DownloadsPage: React.FC = () => {
 - Auto-connects on app start
 - Auto-reconnects with exponential backoff
 - Max 10 reconnection attempts
-- Access via `wsClient` singleton from `@/lib/websocket-client`
+- Access via `wsClient` singleton from `../lib/websocket-client`
 
 ### Constants Organization
 
@@ -208,7 +233,7 @@ src/constants/
 **Usage:**
 
 ```tsx
-import { ENDPOINTS, WS_EVENTS, STALE_TIME } from "@/constants";
+import { ENDPOINTS, WS_EVENTS, STALE_TIME } from "../constants";
 ```
 
 ---
@@ -302,8 +327,8 @@ The AppLayout implements a 24px inverted corner radius at the top-left of the ma
 
 ```tsx
 <AppShell.Main className="relative">
-  <div className="pointer-events-none absolute left-0 top-0 z-10 h-6 w-6 bg-white">
-    <div className="bg-linear-to-br absolute left-0 top-0 h-6 w-6 rounded-tl-3xl from-blue-600 to-indigo-700" />
+  <div className="pointer-events-none absolute top-0 left-0 z-10 h-6 w-6 bg-white">
+    <div className="absolute top-0 left-0 h-6 w-6 rounded-tl-3xl bg-linear-to-br from-blue-600 to-indigo-700" />
   </div>
   <Outlet />
 </AppShell.Main>
