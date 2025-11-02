@@ -53,7 +53,7 @@ export const HomePage: React.FC = () => {
       {/* Continue Reading Section */}
       <div className="mb-10">
         <div className="mb-4 flex items-center justify-between">
-          <Title order={1}>Continue Reading</Title>
+          <Title order={2}>Continue Reading</Title>
           <Anchor
             component="button"
             onClick={handleViewAllContinueReading}

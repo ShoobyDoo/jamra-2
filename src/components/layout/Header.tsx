@@ -1,6 +1,7 @@
 import { Text } from "@mantine/core";
 import React from "react";
 import { LAYOUT } from "../../constants/ui";
+import { SearchBar } from "../ui/SearchBar";
 
 export const Header: React.FC = () => {
   return (
@@ -14,7 +15,7 @@ export const Header: React.FC = () => {
           <Text fw={700} fz={16} lh={1} className="whitespace-nowrap">
             JAMRA
           </Text>
-          <Text size="10px" c="dimmed" lh={0.9} className="leading-tight" p={0}>
+          <Text size="10px" c="dimmed" lh={0.9} p={0}>
             just another manga reader app
           </Text>
         </div>
@@ -23,7 +24,7 @@ export const Header: React.FC = () => {
       {/* Right section - Breadcrumbs and Search with space-between */}
       <div className="flex flex-1 items-center justify-between px-3">
         <div>Breadcrumbs</div>
-        <div>Search</div>
+        <SearchBar />
       </div>
     </div>
   );

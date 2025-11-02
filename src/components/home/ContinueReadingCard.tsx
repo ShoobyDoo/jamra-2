@@ -31,7 +31,7 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
     >
       {/* Cover Image Placeholder */}
       <div
-        className="h-[380px] w-full bg-gradient-to-br from-gray-200 to-gray-300"
+        className="h-[380px] w-full bg-linear-to-br from-gray-200 to-gray-300"
         style={{
           backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
           backgroundSize: "cover",
