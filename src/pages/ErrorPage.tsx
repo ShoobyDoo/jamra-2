@@ -1,7 +1,7 @@
-import React from 'react';
-import { Button, Text, Title, Container, Code } from '@mantine/core';
-import { useRouteError, useNavigate, isRouteErrorResponse } from 'react-router';
-import { ROUTES } from '../routes/routes.config';
+import { Button, Code, Container, Text, Title } from "@mantine/core";
+import React from "react";
+import { isRouteErrorResponse, useNavigate, useRouteError } from "react-router";
+import { ROUTES } from "../routes/routes.config";
 
 export const ErrorPage: React.FC = () => {
   const error = useRouteError();
@@ -16,47 +16,50 @@ export const ErrorPage: React.FC = () => {
   };
 
   // Type guard for route errors
-  const getErrorMessage = (): { title: string; message: string; details?: string } => {
+  const getErrorMessage = (): {
+    title: string;
+    message: string;
+    details?: string;
+  } => {
     if (isRouteErrorResponse(error)) {
       return {
         title: `${error.status} ${error.statusText}`,
-        message: error.data?.message || 'An error occurred while loading this page.',
+        message:
+          error.data?.message || "An error occurred while loading this page.",
         details: error.data?.details,
       };
     }
 
     if (error instanceof Error) {
       return {
-        title: 'Application Error',
+        title: "Application Error",
         message: error.message,
         details: error.stack,
       };
     }
 
     return {
-      title: 'Unknown Error',
-      message: 'An unexpected error occurred.',
+      title: "Unknown Error",
+      message: "An unexpected error occurred.",
     };
   };
 
   const { title, message, details } = getErrorMessage();
 
   return (
-    <Container className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <Title order={1} className="text-6xl font-bold text-red-600 mb-4">
+    <Container className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+      <Title order={1} className="mb-4 text-6xl font-bold text-red-600">
         Oops!
       </Title>
 
-      <Title order={2} className="text-2xl font-semibold text-gray-700 mb-4">
+      <Title order={2} className="mb-4 text-2xl font-semibold text-gray-700">
         {title}
       </Title>
 
-      <Text className="text-gray-600 mb-6 max-w-md">
-        {message}
-      </Text>
+      <Text className="mb-6 max-w-md text-gray-600">{message}</Text>
 
       {details && import.meta.env.DEV && (
-        <Code block className="mb-6 max-w-2xl text-left overflow-auto max-h-48">
+        <Code block className="mb-6 max-h-48 max-w-2xl overflow-auto text-left">
           {details}
         </Code>
       )}

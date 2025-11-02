@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, Text, Progress, Stack } from '@mantine/core';
-import type { DownloadQueueItem } from '../../types';
+import { Card, Progress, Stack, Text } from "@mantine/core";
+import React from "react";
+import type { DownloadQueueItem } from "../../types";
 
 interface DownloadQueueProps {
   queue: DownloadQueueItem[];

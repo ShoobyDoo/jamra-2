@@ -21,14 +21,14 @@
  * ```
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../api/client';
-import { ENDPOINTS } from '../../constants/api';
-import type { DownloadQueueItem } from '../../types';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "../../api/client";
+import { ENDPOINTS } from "../../constants/api";
+import type { DownloadQueueItem } from "../../types";
 
 // Query keys
 export const downloadKeys = {
-  queue: ['downloads', 'queue'] as const,
+  queue: ["downloads", "queue"] as const,
 };
 
 // Hooks

@@ -1,5 +1,5 @@
 appId: com.jamra.reader
-productName: Jamra Manga Reader
+productName: JAMRA
 directories:
   output: release
   buildResources: public

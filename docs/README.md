@@ -5,4 +5,3 @@ This folder documents the working, battle‑tested setup for packaging the Elect
 - Windows guide: docs/Windows-Electron-Packaging.md
 - Troubleshooting: docs/Troubleshooting-Windows.md
 - Project structure notes: docs/Project-Structure.md
-

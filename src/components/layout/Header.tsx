@@ -1,5 +1,5 @@
-import React from 'react';
-import { LAYOUT } from "../../utils/constants";
+import React from "react";
+import { LAYOUT } from "../../constants/ui";
 
 export const Header: React.FC = () => {
   return (

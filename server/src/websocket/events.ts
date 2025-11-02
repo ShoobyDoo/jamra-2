@@ -9,23 +9,23 @@
  */
 export const WS_EVENTS = {
   // Connection events
-  CONNECT: 'connect',
-  DISCONNECT: 'disconnect',
-  ERROR: 'error',
+  CONNECT: "connect",
+  DISCONNECT: "disconnect",
+  ERROR: "error",
 
   // Download events
-  DOWNLOAD_STARTED: 'download:started',
-  DOWNLOAD_PROGRESS: 'download:progress',
-  DOWNLOAD_PAGE_COMPLETE: 'download:page:complete',
-  DOWNLOAD_CHAPTER_COMPLETE: 'download:chapter:complete',
-  DOWNLOAD_FAILED: 'download:failed',
-  DOWNLOAD_CANCELLED: 'download:cancelled',
+  DOWNLOAD_STARTED: "download:started",
+  DOWNLOAD_PROGRESS: "download:progress",
+  DOWNLOAD_PAGE_COMPLETE: "download:page:complete",
+  DOWNLOAD_CHAPTER_COMPLETE: "download:chapter:complete",
+  DOWNLOAD_FAILED: "download:failed",
+  DOWNLOAD_CANCELLED: "download:cancelled",
 
   // Library events (future)
-  LIBRARY_UPDATED: 'library:updated',
+  LIBRARY_UPDATED: "library:updated",
 
   // Manga events (future)
-  MANGA_UPDATED: 'manga:updated',
+  MANGA_UPDATED: "manga:updated",
 } as const;
 
 /**
@@ -79,7 +79,7 @@ export interface DownloadCancelledPayload {
  */
 export interface LibraryUpdatedPayload {
   mangaId: string;
-  action: 'added' | 'removed' | 'updated';
+  action: "added" | "removed" | "updated";
   timestamp: number;
 }
 

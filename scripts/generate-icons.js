@@ -1,12 +1,12 @@
-import sharp from 'sharp';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const outputDir = path.join(__dirname, '..', 'public');
+const outputDir = path.join(__dirname, "..", "public");
 
 // Ensure output directory exists
 if (!fs.existsSync(outputDir)) {
@@ -38,31 +38,31 @@ const generateIconSVG = (size) => `
 
 const generateIcons = async () => {
   try {
-    console.log('Generating application icons...');
+    console.log("Generating application icons...");
 
     // Generate PNG icon (512x512) for Linux
     const svgBuffer512 = Buffer.from(generateIconSVG(512));
     await sharp(svgBuffer512)
       .resize(512, 512)
       .png()
-      .toFile(path.join(outputDir, 'icon.png'));
-    console.log('✓ Generated icon.png (512x512)');
+      .toFile(path.join(outputDir, "icon.png"));
+    console.log("✓ Generated icon.png (512x512)");
 
     // Generate ICO icon for Windows (256x256)
     const svgBuffer256 = Buffer.from(generateIconSVG(256));
     await sharp(svgBuffer256)
       .resize(256, 256)
       .png()
-      .toFile(path.join(outputDir, 'icon-256.png'));
-    console.log('✓ Generated icon-256.png (for Windows .ico)');
+      .toFile(path.join(outputDir, "icon-256.png"));
+    console.log("✓ Generated icon-256.png (for Windows .ico)");
 
     // Note: electron-forge will automatically convert PNG to ICO for Windows
     // and will handle ICNS generation for macOS if needed
 
-    console.log('\n✅ All icons generated successfully!');
-    console.log('   Location:', outputDir);
+    console.log("\n✅ All icons generated successfully!");
+    console.log("   Location:", outputDir);
   } catch (error) {
-    console.error('❌ Error generating icons:', error);
+    console.error("❌ Error generating icons:", error);
     process.exit(1);
   }
 };

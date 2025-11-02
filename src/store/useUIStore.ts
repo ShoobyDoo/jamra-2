@@ -3,7 +3,7 @@
  * Handles modals, sidebars, notifications, and other UI-related state
  */
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface UIStore {
   // Modal state

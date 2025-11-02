@@ -8,7 +8,7 @@
  * Uses VITE_API_URL from environment or defaults to localhost:3000
  */
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 /**
  * API Endpoints
@@ -17,20 +17,20 @@ export const API_BASE_URL =
  */
 export const ENDPOINTS = {
   // Manga endpoints (used in list + search)
-  MANGA: '/manga',
+  MANGA: "/manga",
   MANGA_BY_ID: (id: string) => `/manga/${id}`,
 
   // Chapter endpoints
-  CHAPTERS: '/chapters',
+  CHAPTERS: "/chapters",
   CHAPTER_BY_ID: (id: string) => `/chapters/${id}`,
   CHAPTERS_BY_MANGA: (mangaId: string) => `/chapters?mangaId=${mangaId}`,
 
   // Library endpoints (used in get, add, remove)
-  LIBRARY: '/library',
+  LIBRARY: "/library",
   LIBRARY_BY_MANGA: (mangaId: string) => `/library/${mangaId}`,
   LIBRARY_PROGRESS: (mangaId: string) => `/library/progress/${mangaId}`,
 
   // Download endpoints (used in queue, add)
-  DOWNLOADS: '/downloads',
+  DOWNLOADS: "/downloads",
   DOWNLOAD_BY_ID: (id: string) => `/downloads/${id}`,
 } as const;

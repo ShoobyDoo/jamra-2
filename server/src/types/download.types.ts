@@ -2,7 +2,7 @@ export interface DownloadQueueItem {
   id: string;
   mangaId: string;
   chapterId: string;
-  status: 'pending' | 'downloading' | 'completed' | 'failed';
+  status: "pending" | "downloading" | "completed" | "failed";
   progress: number;
   createdAt: number;
 }

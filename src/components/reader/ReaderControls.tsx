@@ -1,5 +1,5 @@
-import React from 'react';
-import { ActionIcon, Group } from '@mantine/core';
+import { ActionIcon, Group } from "@mantine/core";
+import React from "react";
 
 interface ReaderControlsProps {
   onPrevPage: () => void;

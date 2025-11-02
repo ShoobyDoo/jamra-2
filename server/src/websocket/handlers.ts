@@ -3,16 +3,16 @@
  * Manages WebSocket connections and event broadcasting
  */
 
-import { WebSocket, WebSocketServer } from 'ws';
-import { WS_EVENTS } from './events.js';
+import { WebSocket, WebSocketServer } from "ws";
 import type {
-  DownloadStartedPayload,
-  DownloadProgressPayload,
-  DownloadPageCompletePayload,
+  DownloadCancelledPayload,
   DownloadChapterCompletePayload,
   DownloadFailedPayload,
-  DownloadCancelledPayload,
-} from './events.js';
+  DownloadPageCompletePayload,
+  DownloadProgressPayload,
+  DownloadStartedPayload,
+} from "./events.js";
+import { WS_EVENTS } from "./events.js";
 
 // Store active connections
 const clients = new Set<WebSocket>();
@@ -21,44 +21,44 @@ const clients = new Set<WebSocket>();
  * Initialize WebSocket server
  */
 export const initializeWebSocketServer = (wss: WebSocketServer): void => {
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('✅ WebSocket client connected');
+  wss.on("connection", (ws: WebSocket) => {
+    console.log("✅ WebSocket client connected");
     clients.add(ws);
 
     // Send connection confirmation
     ws.send(
       JSON.stringify({
         event: WS_EVENTS.CONNECT,
-        data: { message: 'Connected to manga reader server' },
+        data: { message: "Connected to manga reader server" },
         timestamp: Date.now(),
-      })
+      }),
     );
 
     // Handle client messages (future: for client-to-server events)
-    ws.on('message', (message: string) => {
+    ws.on("message", (message: string) => {
       try {
         const data = JSON.parse(message.toString());
-        console.log('Received message from client:', data);
+        console.log("Received message from client:", data);
         // TODO: Handle client-initiated events (e.g., subscribe to specific downloads)
       } catch (error) {
-        console.error('Failed to parse WebSocket message:', error);
+        console.error("Failed to parse WebSocket message:", error);
       }
     });
 
     // Handle disconnection
-    ws.on('close', () => {
-      console.log('❌ WebSocket client disconnected');
+    ws.on("close", () => {
+      console.log("❌ WebSocket client disconnected");
       clients.delete(ws);
     });
 
     // Handle errors
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
+    ws.on("error", (error) => {
+      console.error("WebSocket error:", error);
       clients.delete(ws);
     });
   });
 
-  console.log('🔌 WebSocket server initialized');
+  console.log("🔌 WebSocket server initialized");
 };
 
 /**
@@ -84,40 +84,42 @@ const broadcast = (event: string, data: unknown): void => {
  */
 
 export const emitDownloadStarted = (payload: DownloadStartedPayload): void => {
-  console.log('📡 Emitting download started:', payload.downloadId);
+  console.log("📡 Emitting download started:", payload.downloadId);
   broadcast(WS_EVENTS.DOWNLOAD_STARTED, payload);
 };
 
-export const emitDownloadProgress = (payload: DownloadProgressPayload): void => {
+export const emitDownloadProgress = (
+  payload: DownloadProgressPayload,
+): void => {
   // Don't log every progress update (too noisy)
   broadcast(WS_EVENTS.DOWNLOAD_PROGRESS, payload);
 };
 
 export const emitDownloadPageComplete = (
-  payload: DownloadPageCompletePayload
+  payload: DownloadPageCompletePayload,
 ): void => {
   console.log(
-    `📡 Emitting page complete: ${payload.chapterId} - page ${payload.pageNumber}`
+    `📡 Emitting page complete: ${payload.chapterId} - page ${payload.pageNumber}`,
   );
   broadcast(WS_EVENTS.DOWNLOAD_PAGE_COMPLETE, payload);
 };
 
 export const emitDownloadChapterComplete = (
-  payload: DownloadChapterCompletePayload
+  payload: DownloadChapterCompletePayload,
 ): void => {
-  console.log('📡 Emitting chapter complete:', payload.chapterId);
+  console.log("📡 Emitting chapter complete:", payload.chapterId);
   broadcast(WS_EVENTS.DOWNLOAD_CHAPTER_COMPLETE, payload);
 };
 
 export const emitDownloadFailed = (payload: DownloadFailedPayload): void => {
-  console.log('📡 Emitting download failed:', payload.downloadId);
+  console.log("📡 Emitting download failed:", payload.downloadId);
   broadcast(WS_EVENTS.DOWNLOAD_FAILED, payload);
 };
 
 export const emitDownloadCancelled = (
-  payload: DownloadCancelledPayload
+  payload: DownloadCancelledPayload,
 ): void => {
-  console.log('📡 Emitting download cancelled:', payload.downloadId);
+  console.log("📡 Emitting download cancelled:", payload.downloadId);
   broadcast(WS_EVENTS.DOWNLOAD_CANCELLED, payload);
 };
 

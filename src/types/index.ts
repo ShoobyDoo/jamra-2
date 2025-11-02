@@ -26,7 +26,7 @@ export interface Manga {
   description?: string;
   coverUrl?: string;
   genres: string[];
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: "ongoing" | "completed" | "hiatus";
   createdAt: number;
   updatedAt: number;
 }
@@ -37,7 +37,7 @@ export interface CreateMangaInput {
   description?: string;
   coverUrl?: string;
   genres?: string[];
-  status?: 'ongoing' | 'completed' | 'hiatus';
+  status?: "ongoing" | "completed" | "hiatus";
 }
 
 export interface Chapter {
@@ -68,7 +68,7 @@ export interface DownloadQueueItem {
   id: string;
   mangaId: string;
   chapterId: string;
-  status: 'pending' | 'downloading' | 'completed' | 'failed';
+  status: "pending" | "downloading" | "completed" | "failed";
   progress: number;
   createdAt: number;
 }
@@ -78,12 +78,12 @@ export interface DownloadQueueItem {
  * Re-export from websocket.ts
  */
 export type {
-  DownloadStartedPayload,
-  DownloadProgressPayload,
-  DownloadPageCompletePayload,
+  DownloadCancelledPayload,
   DownloadChapterCompletePayload,
   DownloadFailedPayload,
-  DownloadCancelledPayload,
+  DownloadPageCompletePayload,
+  DownloadProgressPayload,
+  DownloadStartedPayload,
   LibraryUpdatedPayload,
   MangaUpdatedPayload,
-} from './websocket';
+} from "./websocket";

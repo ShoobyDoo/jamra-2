@@ -1,7 +1,7 @@
-import React from 'react';
-import { SimpleGrid, Text } from '@mantine/core';
-import type { Manga } from '../../types';
-import { MangaCard } from './MangaCard';
+import { SimpleGrid, Text } from "@mantine/core";
+import React from "react";
+import type { Manga } from "../../types";
+import { MangaCard } from "./MangaCard";
 
 interface MangaGridProps {
   manga: Manga[];

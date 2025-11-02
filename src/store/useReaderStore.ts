@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface ReaderStore {
   currentPage: number;
@@ -33,5 +33,6 @@ export const useReaderStore = create<ReaderStore>((set) => ({
       currentPage: state.currentPage > 0 ? state.currentPage - 1 : 0,
     })),
 
-  toggleFullscreen: () => set((state) => ({ isFullscreen: !state.isFullscreen })),
+  toggleFullscreen: () =>
+    set((state) => ({ isFullscreen: !state.isFullscreen })),
 }));

@@ -38,3 +38,12 @@ export const READER_CACHE_SIZE = 10; // Keep 10 pages in memory
  */
 export const MAX_CONCURRENT_DOWNLOADS = 3;
 export const DOWNLOAD_RETRY_ATTEMPTS = 3;
+
+/**
+ * UI Layout Options
+ */
+export const LAYOUT = {
+  HEADER_HEIGHT: 48,
+  NAVBAR_WIDTH: 84,
+  MAIN_PADDING: "py-5 px-6",
+} as const;

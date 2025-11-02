@@ -1,16 +1,18 @@
-# Mantine v8.3.5 Developer Guide
+# Mantine Developer Guide
 
 ## Project Stack
 
-- **Mantine**: v8.3.5 (@mantine/core, @mantine/dates, @mantine/dropzone, @mantine/hooks, @mantine/notifications)
-- **React**: 19.1.1
-- **TailwindCSS**: 4.1.16
-- **TanStack Query**: 5.90.5 (server state management)
-- **Zustand**: 5.0.8 (UI state management)
-- **React Router**: 7.9.4
-- **WebSocket**: ws 8.18.3 (real-time updates)
-- **Tabler Icons**: 3.35.0
-- **PostCSS**: postcss-preset-mantine 1.18.0
+- **Mantine 8** (@mantine/core, @mantine/dates, @mantine/dropzone, @mantine/hooks, @mantine/notifications)
+- **React 19**
+- **TailwindCSS 4**
+- **TanStack Query 5** (server state management)
+- **Zustand 5** (UI state management)
+- **React Router 7**
+- **ws** (WebSocket for real-time updates)
+- **Tabler Icons 3**
+- **postcss-preset-mantine**
+
+> **Note**: For exact dependency versions, refer to `package.json`.
 
 ---
 
@@ -300,8 +302,8 @@ The AppLayout implements a 24px inverted corner radius at the top-left of the ma
 
 ```tsx
 <AppShell.Main className="relative">
-  <div className="pointer-events-none absolute top-0 left-0 z-10 h-6 w-6 bg-white">
-    <div className="absolute top-0 left-0 h-6 w-6 rounded-tl-3xl bg-linear-to-br from-blue-600 to-indigo-700" />
+  <div className="pointer-events-none absolute left-0 top-0 z-10 h-6 w-6 bg-white">
+    <div className="bg-linear-to-br absolute left-0 top-0 h-6 w-6 rounded-tl-3xl from-blue-600 to-indigo-700" />
   </div>
   <Outlet />
 </AppShell.Main>
@@ -720,7 +722,7 @@ import "@mantine/notifications/styles.css";
 
 ```tsx
 import "@mantine/dates/styles.css";
-// DayJS already in dependencies (1.11.18)
+// DayJS included in dependencies
 ```
 
 4. **Dropzone**
@@ -897,7 +899,7 @@ type MyButtonProps = ButtonProps & {
 
 ---
 
-## Version-Specific Notes (v8.3.5)
+## Version-Specific Notes
 
 - React 19 compatible
 - Full TypeScript support

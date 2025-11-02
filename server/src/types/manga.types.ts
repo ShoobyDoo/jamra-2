@@ -5,7 +5,7 @@ export interface Manga {
   description?: string;
   coverUrl?: string;
   genres: string[];
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: "ongoing" | "completed" | "hiatus";
   createdAt: number;
   updatedAt: number;
 }
@@ -16,5 +16,5 @@ export interface CreateMangaInput {
   description?: string;
   coverUrl?: string;
   genres?: string[];
-  status?: 'ongoing' | 'completed' | 'hiatus';
+  status?: "ongoing" | "completed" | "hiatus";
 }

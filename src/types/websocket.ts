@@ -55,7 +55,7 @@ export interface DownloadCancelledPayload {
  */
 export interface LibraryUpdatedPayload {
   mangaId: string;
-  action: 'added' | 'removed' | 'updated';
+  action: "added" | "removed" | "updated";
   timestamp: number;
 }
 

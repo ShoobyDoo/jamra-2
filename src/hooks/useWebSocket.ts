@@ -3,9 +3,9 @@
  * React hook for subscribing to WebSocket events
  */
 
-import { useEffect, useState } from 'react';
-import { wsClient } from '../lib/websocket-client';
-import { WS_EVENTS, type WSEventType } from '../constants/websocket';
+import { useEffect, useState } from "react";
+import { WS_EVENTS, type WSEventType } from "../constants/websocket";
+import { wsClient } from "../lib/websocket-client";
 
 /**
  * Hook to subscribe to WebSocket events
@@ -21,9 +21,7 @@ import { WS_EVENTS, type WSEventType } from '../constants/websocket';
  * }
  * ```
  */
-export const useWebSocket = <T = unknown>(
-  event: WSEventType
-): T | null => {
+export const useWebSocket = <T = unknown>(event: WSEventType): T | null => {
   const [data, setData] = useState<T | null>(null);
 
   useEffect(() => {
@@ -56,7 +54,10 @@ export const useWebSocketStatus = (): boolean => {
     const onDisconnect = () => setIsConnected(false);
 
     const unsubscribeConnect = wsClient.on(WS_EVENTS.CONNECT, onConnect);
-    const unsubscribeDisconnect = wsClient.on(WS_EVENTS.DISCONNECT, onDisconnect);
+    const unsubscribeDisconnect = wsClient.on(
+      WS_EVENTS.DISCONNECT,
+      onDisconnect,
+    );
 
     // Check initial connection status
     setIsConnected(wsClient.isConnected());

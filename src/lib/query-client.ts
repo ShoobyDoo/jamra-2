@@ -3,13 +3,13 @@
  * Centralized QueryClient setup with sensible defaults
  */
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 import {
-  STALE_TIME,
   GC_TIME,
-  MAX_QUERY_RETRIES,
   MAX_MUTATION_RETRIES,
-} from '../constants/query';
+  MAX_QUERY_RETRIES,
+  STALE_TIME,
+} from "../constants/query";
 
 /**
  * Default options for all queries
@@ -25,7 +25,7 @@ const queryConfig = {
     // Retry failed requests
     retry: (failureCount: number, error: unknown) => {
       // Don't retry on 4xx errors (client errors)
-      if (error instanceof Error && 'status' in error) {
+      if (error instanceof Error && "status" in error) {
         const status = (error as { status: number }).status;
         if (status >= 400 && status < 500) {
           return false;

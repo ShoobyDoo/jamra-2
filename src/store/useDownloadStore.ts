@@ -146,7 +146,7 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 
-import { create } from 'zustand';
+import { create } from "zustand";
 
 // ❌ WRONG: This is server state, should be in TanStack Query
 interface DownloadItem {
@@ -154,7 +154,7 @@ interface DownloadItem {
   mangaTitle: string;
   chapterTitle: string;
   progress: number;
-  status: 'pending' | 'downloading' | 'completed' | 'failed';
+  status: "pending" | "downloading" | "completed" | "failed";
 }
 
 // ❌ WRONG: Managing server data in Zustand
@@ -162,10 +162,10 @@ interface DownloadStore {
   queue: DownloadItem[]; // ❌ Server state
   isDownloading: boolean; // ❌ Derived from server state
 
-  addToQueue: (item: Omit<DownloadItem, 'progress' | 'status'>) => void;
+  addToQueue: (item: Omit<DownloadItem, "progress" | "status">) => void;
   removeFromQueue: (id: string) => void;
   updateProgress: (id: string, progress: number) => void;
-  setStatus: (id: string, status: DownloadItem['status']) => void;
+  setStatus: (id: string, status: DownloadItem["status"]) => void;
   setIsDownloading: (isDownloading: boolean) => void;
 }
 
@@ -180,7 +180,7 @@ export const useDownloadStore = create<DownloadStore>((set) => ({
   // ❌ PROBLEM: Manually adding to queue - what if server rejects it?
   addToQueue: (item) =>
     set((state) => ({
-      queue: [...state.queue, { ...item, progress: 0, status: 'pending' }],
+      queue: [...state.queue, { ...item, progress: 0, status: "pending" }],
     })),
 
   // ❌ PROBLEM: Removing from local state doesn't update server
@@ -193,7 +193,7 @@ export const useDownloadStore = create<DownloadStore>((set) => ({
   updateProgress: (id, progress) =>
     set((state) => ({
       queue: state.queue.map((item) =>
-        item.id === id ? { ...item, progress } : item
+        item.id === id ? { ...item, progress } : item,
       ),
     })),
 
@@ -201,7 +201,7 @@ export const useDownloadStore = create<DownloadStore>((set) => ({
   setStatus: (id, status) =>
     set((state) => ({
       queue: state.queue.map((item) =>
-        item.id === id ? { ...item, status } : item
+        item.id === id ? { ...item, status } : item,
       ),
     })),
 

@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../../api/client';
-import { ENDPOINTS } from '../../constants/api';
-import type { LibraryItem, ReadingProgress } from '../../types';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "../../api/client";
+import { ENDPOINTS } from "../../constants/api";
+import type { LibraryItem, ReadingProgress } from "../../types";
 
 // Query keys
 export const libraryKeys = {
-  all: ['library'] as const,
-  progress: (mangaId: string) => ['library', 'progress', mangaId] as const,
+  all: ["library"] as const,
+  progress: (mangaId: string) => ["library", "progress", mangaId] as const,
 };
 
 // Hooks

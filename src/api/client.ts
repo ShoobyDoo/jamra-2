@@ -3,7 +3,7 @@
  * Uses native fetch API for minimal bundle size
  */
 
-import { API_BASE_URL } from '../constants/api';
+import { API_BASE_URL } from "../constants/api";
 
 /**
  * Custom error class for API errors

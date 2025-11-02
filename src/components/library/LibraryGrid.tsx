@@ -1,6 +1,6 @@
-import React from 'react';
-import { Text } from '@mantine/core';
-import type { LibraryItem } from '../../types';
+import { Text } from "@mantine/core";
+import React from "react";
+import type { LibraryItem } from "../../types";
 
 interface LibraryGridProps {
   items: LibraryItem[];

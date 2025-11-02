@@ -1,29 +1,35 @@
-# Jamra Manga Reader
+# JAMRA
 
 A feature-rich manga reader desktop application built with Electron, React, and Express.
 
 ## Tech Stack
 
 ### Frontend
-- **React 19.1.1** - UI library
-- **Mantine 8.3.5** - Component library
-- **TailwindCSS 4.1.16** - Styling
-- **Zustand 5.0.8** - Client state management
-- **TanStack Query 5.90.5** - Server state management
-- **React Router 7.9.4** - Routing
+
+- **React 19** - UI library
+- **Mantine 8** - Component library
+- **TailwindCSS 4** - Styling
+- **Zustand 5** - Client state management
+- **TanStack Query 5** - Server state management
+- **React Router 7** - Routing
 
 ### Backend
-- **Express 5.1.0** - REST API server
-- **Better-SQLite3 12.2.0** - Database (with cross-platform support)
+
+- **Express 5** - REST API server
+- **Better-SQLite3 12** - Database (with cross-platform support)
 - **Node.js 20+** - Runtime (required)
 
 ### Desktop
-- **Electron 38.3.0** - Desktop wrapper
-- **Electron Forge 7** - Packaging (Squirrel/DMG/DEB)
+
+- **Electron 38+** - Desktop wrapper
+- **Electron Forge** - Packaging (Squirrel/DMG/DEB)
+
+> **Note**: Version numbers listed above represent major versions. For exact dependency versions, refer to `package.json`.
 
 ## Architecture
 
 The app uses a **REST API architecture** instead of Electron IPC:
+
 - **Backend Server**: Express REST API on `http://localhost:3000`
 - **Frontend**: React SPA accessible in Electron OR browser
 - **Database**: SQLite for local storage
@@ -32,7 +38,7 @@ The app uses a **REST API architecture** instead of Electron IPC:
 ## Project Structure
 
 ```
-jamra-2/
+JAMRA/
 ├── server/                 # Express backend
 │   ├── src/
 │   │   ├── database/      # SQLite schema & connection
@@ -72,6 +78,7 @@ pnpm install
 ### Development
 
 **Option 1: Run in Browser (Faster for UI Development)**
+
 ```bash
 # Terminal 1: Start backend server
 pnpm dev:server
@@ -83,6 +90,7 @@ pnpm dev
 ```
 
 **Option 2: Run in Electron (Full Desktop App)**
+
 ```bash
 # Terminal 1: Start backend server
 pnpm dev:server
@@ -110,6 +118,7 @@ pnpm make
 ```
 
 ### Alternative Windows Builder (NSIS Installer, Portable EXE)
+
 If Squirrel fails on your environment, use Electron Builder:
 
 ```bash
@@ -124,32 +133,36 @@ pnpm dist:linux
 ```
 
 Electron Builder is configured in `electron-builder.yml` and includes:
+
 - Files: `dist/**`, `dist-electron/**`, `server/dist/**`
 - ASAR unpack for native modules: `**/*.node`
 
 Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/icon.ico` and set `setupIcon` in `forge.config.js` to that file. A quick way to generate one is to convert your `icon-256.png` to `.ico` with a tool like `png-to-ico`.
 
 ### Windows Prerequisites (better-sqlite3)
+
 - Install Visual Studio 2022 Build Tools with “Desktop development with C++” and Windows 10/11 SDK.
 - Install Python 3 and ensure `python` is on PATH.
 - After `pnpm install`, native modules are rebuilt automatically via `postinstall`:
   - `electron-rebuild -f -w better-sqlite3`
 
 ### Log Files (for debugging packaged exe)
-- Main/server logs: `%APPDATA%/jamra-2/logs/main.log` (defaults to app name)
-- On macOS: `~/Library/Application Support/jamra-2/logs/main.log`
-- Note: If `productName` is set in `package.json`, replace `jamra-2` with that value.
-- On Linux: `~/.config/Jamra Manga Reader/logs/main.log`
+
+- Main/server logs: `%APPDATA%/JAMRA/logs/main.log`
+- On macOS: `~/Library/Application Support/JAMRA/logs/main.log`
+- On Linux: `~/.config/JAMRA/logs/main.log`
 
 ## State Management
 
 ### Zustand Stores (Client State)
+
 - **useLibraryStore** - Library UI state (view mode, selection, sorting)
 - **useReaderStore** - Reader state (current page, fullscreen)
 - **useSettingsStore** - App settings (persisted to localStorage)
 - **useUIStore** - Global UI state (modals, sidebars)
 
 ### TanStack Query (Server State)
+
 - **useMangaQueries** - Manga CRUD operations
 - **useChapterQueries** - Chapter queries
 - **useLibraryQueries** - Library & reading progress
@@ -160,6 +173,7 @@ Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/
 All endpoints accessible at `http://localhost:3000/api`
 
 ### Manga
+
 - `GET /api/manga` - List all manga
 - `GET /api/manga/:id` - Get manga by ID
 - `POST /api/manga` - Create manga
@@ -167,12 +181,14 @@ All endpoints accessible at `http://localhost:3000/api`
 - `DELETE /api/manga/:id` - Delete manga
 
 ### Chapters
+
 - `GET /api/chapters?mangaId=:id` - Get chapters by manga ID
 - `GET /api/chapters/:id` - Get chapter by ID
 - `POST /api/chapters` - Create chapter
 - `DELETE /api/chapters/:id` - Delete chapter
 
 ### Library
+
 - `GET /api/library` - Get library items
 - `POST /api/library` - Add manga to library
 - `DELETE /api/library/:mangaId` - Remove from library
@@ -180,6 +196,7 @@ All endpoints accessible at `http://localhost:3000/api`
 - `PUT /api/library/progress` - Update reading progress
 
 ### Downloads
+
 - `GET /api/downloads` - Get download queue
 - `POST /api/downloads` - Add to download queue
 - `DELETE /api/downloads/:id` - Remove from queue

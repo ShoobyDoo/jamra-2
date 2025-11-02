@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Text } from '@mantine/core';
+import { Box, Text } from "@mantine/core";
+import React from "react";
 
 interface PageViewerProps {
   imageSrc?: string;

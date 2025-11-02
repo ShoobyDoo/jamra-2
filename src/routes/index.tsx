@@ -4,12 +4,44 @@ import { AppLayout } from "../components/AppLayout";
 import { LazyPage } from "./LazyPage";
 import { ROUTES } from "./routes.config";
 
-// Lazy load pages for code splitting
+// Main accessable routes
+const HomePage = lazy(() =>
+  import("../pages/HomePage").then((module) => ({
+    default: module.HomePage,
+  })),
+);
+const DiscoverPage = lazy(() =>
+  import("../pages/DiscoverPage").then((module) => ({
+    default: module.DiscoverPage,
+  })),
+);
 const LibraryPage = lazy(() =>
   import("../pages/LibraryPage").then((module) => ({
     default: module.LibraryPage,
   })),
 );
+const DownloadsPage = lazy(() =>
+  import("../pages/DownloadsPage").then((module) => ({
+    default: module.DownloadsPage,
+  })),
+);
+const HistoryPage = lazy(() =>
+  import("../pages/HistoryPage").then((module) => ({
+    default: module.HistoryPage,
+  })),
+);
+const ExtensionsPage = lazy(() =>
+  import("../pages/ExtensionsPage").then((module) => ({
+    default: module.ExtensionsPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("../pages/SettingsPage").then((module) => ({
+    default: module.SettingsPage,
+  })),
+);
+
+// Not traditionally accesible routes (triggered by something)
 const MangaDetailsPage = lazy(() =>
   import("../pages/MangaDetailsPage").then((module) => ({
     default: module.MangaDetailsPage,
@@ -18,16 +50,6 @@ const MangaDetailsPage = lazy(() =>
 const ReaderPage = lazy(() =>
   import("../pages/ReaderPage").then((module) => ({
     default: module.ReaderPage,
-  })),
-);
-const DownloadsPage = lazy(() =>
-  import("../pages/DownloadsPage").then((module) => ({
-    default: module.DownloadsPage,
-  })),
-);
-const SettingsPage = lazy(() =>
-  import("../pages/SettingsPage").then((module) => ({
-    default: module.SettingsPage,
   })),
 );
 const NotFoundPage = lazy(() =>
@@ -61,12 +83,22 @@ const routeConfig: RouteObject[] = [
       </LazyPage>
     ),
     children: [
-      // Home redirects to library
+      // Home page (Root route)
       {
         index: true,
         element: (
           <LazyPage>
-            <LibraryPage />
+            <HomePage />
+          </LazyPage>
+        ),
+      },
+
+      // Discover page
+      {
+        path: ROUTES.DISCOVER,
+        element: (
+          <LazyPage>
+            <DiscoverPage />
           </LazyPage>
         ),
       },
@@ -77,6 +109,46 @@ const routeConfig: RouteObject[] = [
         element: (
           <LazyPage>
             <LibraryPage />
+          </LazyPage>
+        ),
+      },
+
+      // Downloads page
+      {
+        path: ROUTES.DOWNLOADS,
+        element: (
+          <LazyPage>
+            <DownloadsPage />
+          </LazyPage>
+        ),
+      },
+
+      // History page
+      {
+        path: ROUTES.HISTORY,
+        element: (
+          <LazyPage>
+            <HistoryPage />
+          </LazyPage>
+        ),
+      },
+
+      // Extensions page
+      {
+        path: ROUTES.EXTENSIONS,
+        element: (
+          <LazyPage>
+            <ExtensionsPage />
+          </LazyPage>
+        ),
+      },
+
+      // Settings page
+      {
+        path: ROUTES.SETTINGS,
+        element: (
+          <LazyPage>
+            <SettingsPage />
           </LazyPage>
         ),
       },
@@ -97,26 +169,6 @@ const routeConfig: RouteObject[] = [
         element: (
           <LazyPage>
             <ReaderPage />
-          </LazyPage>
-        ),
-      },
-
-      // Downloads page
-      {
-        path: ROUTES.DOWNLOADS,
-        element: (
-          <LazyPage>
-            <DownloadsPage />
-          </LazyPage>
-        ),
-      },
-
-      // Settings page
-      {
-        path: ROUTES.SETTINGS,
-        element: (
-          <LazyPage>
-            <SettingsPage />
           </LazyPage>
         ),
       },

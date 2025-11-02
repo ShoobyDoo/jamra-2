@@ -1,15 +1,15 @@
-import express from 'express';
-import cors from 'cors';
-import { createServer, Server as HttpServer } from 'http';
-import type { Socket } from 'node:net';
-import { WebSocketServer } from 'ws';
-import mangaRoutes from './routes/manga.routes.js';
-import chapterRoutes from './routes/chapter.routes.js';
-import libraryRoutes from './routes/library.routes.js';
-import downloadRoutes from './routes/download.routes.js';
-import { getDatabase, closeDatabase } from './database/connection.js';
-import { runMigrations } from './database/migrations.js';
-import { initializeWebSocketServer } from './websocket/handlers.js';
+import cors from "cors";
+import express from "express";
+import { createServer, Server as HttpServer } from "http";
+import type { Socket } from "node:net";
+import { WebSocketServer } from "ws";
+import { closeDatabase, getDatabase } from "./database/connection.js";
+import { runMigrations } from "./database/migrations.js";
+import chapterRoutes from "./routes/chapter.routes.js";
+import downloadRoutes from "./routes/download.routes.js";
+import libraryRoutes from "./routes/library.routes.js";
+import mangaRoutes from "./routes/manga.routes.js";
+import { initializeWebSocketServer } from "./websocket/handlers.js";
 
 // Store server instances for cleanup
 let httpServer: HttpServer | null = null;
@@ -24,16 +24,20 @@ const openSockets: Set<Socket> = new Set();
  *
  * @returns Object containing the Express app and HTTP server instances
  */
-export const initializeServer = (): { app: express.Application; server: HttpServer; wss: WebSocketServer } => {
+export const initializeServer = (): {
+  app: express.Application;
+  server: HttpServer;
+  wss: WebSocketServer;
+} => {
   const app = express();
 
   // Create HTTP server (needed for WebSocket upgrade)
   const server = createServer(app);
   httpServer = server;
   // Track open TCP connections so we can destroy them on shutdown
-  server.on('connection', (socket: Socket) => {
+  server.on("connection", (socket: Socket) => {
     openSockets.add(socket);
-    socket.on('close', () => openSockets.delete(socket));
+    socket.on("close", () => openSockets.delete(socket));
   });
 
   // Middleware
@@ -45,14 +49,14 @@ export const initializeServer = (): { app: express.Application; server: HttpServ
   runMigrations(db);
 
   // Register routes
-  app.use('/api/manga', mangaRoutes);
-  app.use('/api/chapters', chapterRoutes);
-  app.use('/api/library', libraryRoutes);
-  app.use('/api/downloads', downloadRoutes);
+  app.use("/api/manga", mangaRoutes);
+  app.use("/api/chapters", chapterRoutes);
+  app.use("/api/library", libraryRoutes);
+  app.use("/api/downloads", downloadRoutes);
 
   // Health check
-  app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: Date.now() });
+  app.get("/health", (req, res) => {
+    res.json({ status: "ok", timestamp: Date.now() });
   });
 
   // Initialize WebSocket server
@@ -60,7 +64,7 @@ export const initializeServer = (): { app: express.Application; server: HttpServ
   websocketServer = wss;
   initializeWebSocketServer(wss);
 
-  console.log('✅ Server initialized successfully');
+  console.log("✅ Server initialized successfully");
 
   return { app, server, wss };
 };
@@ -72,11 +76,11 @@ export const initializeServer = (): { app: express.Application; server: HttpServ
  */
 export const shutdownServer = (): Promise<void> => {
   return new Promise((resolve) => {
-    console.log('Starting graceful shutdown...');
+    console.log("Starting graceful shutdown...");
 
     // Set a timeout to force resolve if shutdown takes too long
     const forceResolveTimeout = setTimeout(() => {
-      console.warn('Graceful shutdown timeout. Forcing resolve...');
+      console.warn("Graceful shutdown timeout. Forcing resolve...");
       resolve();
     }, 10000); // 10 second timeout
 
@@ -88,15 +92,19 @@ export const shutdownServer = (): Promise<void> => {
 
     // 1. Stop accepting new connections and proactively destroy keep-alive sockets
     for (const socket of openSockets) {
-      try { socket.destroy(); } catch (err) { console.warn('Error destroying socket', err); }
+      try {
+        socket.destroy();
+      } catch (err) {
+        console.warn("Error destroying socket", err);
+      }
       openSockets.delete(socket);
     }
 
     httpServer.close((err) => {
       if (err) {
-        console.error('Error closing HTTP server:', err);
+        console.error("Error closing HTTP server:", err);
       } else {
-        console.log('HTTP server closed');
+        console.log("HTTP server closed");
       }
 
       // 2. Close WebSocket connections
@@ -104,21 +112,21 @@ export const shutdownServer = (): Promise<void> => {
         client.close();
       });
       websocketServer?.close(() => {
-        console.log('WebSocket server closed');
+        console.log("WebSocket server closed");
       });
 
       // 3. Close database connection
       try {
         closeDatabase();
-        console.log('Database closed');
+        console.log("Database closed");
       } catch (error) {
-        console.error('Error closing database:', error);
+        console.error("Error closing database:", error);
       }
 
       // Clear the force resolve timeout
       clearTimeout(forceResolveTimeout);
 
-      console.log('Graceful shutdown complete');
+      console.log("Graceful shutdown complete");
       resolve();
     });
   });
@@ -129,8 +137,8 @@ export const shutdownServer = (): Promise<void> => {
 let isMainModule = false;
 try {
   const arg1 = process.argv?.[1];
-  if (typeof arg1 === 'string' && arg1.length > 0) {
-    const normalized = `file://${arg1.replace(/\\/g, '/')}`;
+  if (typeof arg1 === "string" && arg1.length > 0) {
+    const normalized = `file://${arg1.replace(/\\/g, "/")}`;
     isMainModule = import.meta.url === normalized;
   }
 } catch {
@@ -156,17 +164,17 @@ if (isMainModule) {
   };
 
   // Register signal handlers for graceful shutdown
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
   // Handle uncaught errors
-  process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception:', error);
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught exception:", error);
+    gracefulShutdown("UNCAUGHT_EXCEPTION");
   });
 
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled rejection at:', promise, 'reason:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled rejection at:", promise, "reason:", reason);
+    gracefulShutdown("UNHANDLED_REJECTION");
   });
 }
