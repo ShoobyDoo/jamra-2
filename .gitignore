@@ -44,3 +44,4 @@ release/
 # ai/llm related
 .claude/
 nul
+server/src/database/schema.sql

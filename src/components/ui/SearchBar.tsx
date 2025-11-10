@@ -19,6 +19,7 @@ export const SearchBar: React.FC = () => {
         placeholder="Search manga..."
         radius="md"
         value={query}
+        w={300}
         onChange={handleSearch}
         leftSection={<IconSearch size={16} />}
         rightSection={

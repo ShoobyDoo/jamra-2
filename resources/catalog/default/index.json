@@ -1,0 +1,27 @@
+{
+  "checksum": "local-dev",
+  "entries": [
+    {
+      "id": "weebcentral",
+      "slug": "weebcentral",
+      "name": "WeebCentral",
+      "version": "1.0.0",
+      "description": "WeebCentral extension packaged for JAMRA.",
+      "iconUrl": "../extensions/weebcentral/assets/icon.png",
+      "archiveUrl": "../extensions/weebcentral",
+      "language": "en",
+      "checksum": "weebcentral-local"
+    },
+    {
+      "id": "batoto",
+      "slug": "batoto",
+      "name": "Bato.to",
+      "version": "1.0.0",
+      "description": "Bato.to extension packaged for JAMRA.",
+      "iconUrl": "../extensions/batoto/assets/icon.png",
+      "archiveUrl": "../extensions/batoto",
+      "language": "en",
+      "checksum": "batoto-local"
+    }
+  ]
+}

@@ -59,9 +59,6 @@ export const useWebSocketStatus = (): boolean => {
       onDisconnect,
     );
 
-    // Check initial connection status
-    setIsConnected(wsClient.isConnected());
-
     return () => {
       unsubscribeConnect();
       unsubscribeDisconnect();

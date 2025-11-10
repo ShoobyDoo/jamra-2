@@ -12,12 +12,27 @@ export default defineConfig({
       {
         // Main process entry
         entry: "electron/main.ts",
+        onstart({ startup }) {
+          // Start Electron (not Node.js)
+          startup();
+        },
         vite: {
           build: {
+            outDir: "dist-electron",
+            lib: {
+              entry: "electron/main.ts",
+              formats: ["cjs"],
+              fileName: () => "main.cjs",
+            },
             rollupOptions: {
+              output: {
+                format: "cjs",
+              },
               // Externalize all server dependencies to avoid bundling issues
               // These will be loaded from node_modules at runtime
               external: [
+                // Electron itself must be external
+                "electron",
                 // Server dependencies (CommonJS packages)
                 "express",
                 "cors",

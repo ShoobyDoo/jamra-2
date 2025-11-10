@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeImage } from "electron";
 import fs from "fs";
 import { Server as HttpServer } from "http";
 import path from "path";
@@ -105,25 +105,29 @@ let httpServer: HttpServer | null = null;
 
 /**
  * Start the Express server in the Electron main process.
- * No child process spawning - runs directly in the same process.
+ * In development: tsx watch runs the server separately, Electron just connects to it.
+ * In production: Server runs directly in the Electron main process.
  */
 const startServer = async (): Promise<void> => {
   const isDev = !app.isPackaged;
 
-  console.log("Initializing Express server in main process...");
-
-  // Set database path to user data directory
+  // Set environment variables for server
   process.env.DB_PATH = app.getPath("userData");
   process.env.RESOURCES_PATH = process.resourcesPath;
   process.env.ELECTRON_PACKAGED = app.isPackaged ? "true" : "false";
 
   if (isDev) {
-    console.log("Development mode: Server code hot-reloads via tsx watch");
-    console.log("Waiting for backend to be ready...");
+    console.log("Development mode: Server runs via tsx watch (separate process)");
+    console.log("Skipping server initialization in Electron");
+    console.log("Waiting for backend server at http://localhost:3000...");
+    // In dev mode, don't start the server - tsx watch handles it
+    return;
   }
 
+  console.log("Production mode: Initializing Express server in main process...");
+
   try {
-    // Initialize server directly (no spawning)
+    // Initialize server directly (only in production)
     const { server } = initializeServer();
     httpServer = server;
 
@@ -186,9 +190,15 @@ const createWindow = (): void => {
         "preload.js",
       );
 
+  // Icon path resolution for dev and production
+  const iconPath = isDev
+    ? path.join(process.cwd(), "public", "jamra_icon.ico")
+    : path.join(process.resourcesPath, "jamra_icon.ico");
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
+    icon: nativeImage.createFromPath(iconPath),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -254,7 +264,10 @@ app.whenReady().then(async () => {
 
 // Gracefully shutdown server when app quits
 app.on("window-all-closed", async () => {
-  await shutdownServer();
+  // Only shutdown if server is running (production mode)
+  if (httpServer) {
+    await shutdownServer();
+  }
   if (process.platform !== "darwin") {
     app.quit();
   }

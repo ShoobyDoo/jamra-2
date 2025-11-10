@@ -6,25 +6,25 @@ export const libraryService = {
     return [];
   },
 
-  addManga: async (mangaId: string): Promise<LibraryItem> => {
+  addManga: async (_mangaId: string): Promise<LibraryItem> => {
     // TODO: Insert into library
     throw new Error("Not implemented");
   },
 
-  removeManga: async (mangaId: string): Promise<void> => {
+  removeManga: async (_mangaId: string): Promise<void> => {
     // TODO: Remove from library
     throw new Error("Not implemented");
   },
 
-  getProgress: async (mangaId: string): Promise<ReadingProgress | null> => {
+  getProgress: async (_mangaId: string): Promise<ReadingProgress | null> => {
     // TODO: Get reading progress
     return null;
   },
 
   updateProgress: async (
-    mangaId: string,
-    chapterId: string,
-    page: number,
+    _mangaId: string,
+    _chapterId: string,
+    _page: number,
   ): Promise<ReadingProgress> => {
     // TODO: Update reading progress
     throw new Error("Not implemented");

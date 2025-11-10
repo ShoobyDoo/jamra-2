@@ -22,17 +22,19 @@ A feature-rich manga reader desktop application built with Electron, React, and 
 ### Desktop
 
 - **Electron 38+** - Desktop wrapper
-- **Electron Forge** - Packaging (Squirrel/DMG/DEB)
+- **Electron Builder** - Packaging (NSIS/Portable/DMG/DEB)
 
 > **Note**: Version numbers listed above represent major versions. For exact dependency versions, refer to `package.json`.
 
 ## Architecture
 
-The app uses a **REST API architecture** instead of Electron IPC:
+The app uses a **modular REST API architecture** with an extension system:
 
 - **Backend Server**: Express REST API on `http://localhost:3000`
 - **Frontend**: React SPA accessible in Electron OR browser
 - **Database**: SQLite for local storage
+- **Extensions**: Modular system for manga sources (weebcentral, batoto, etc.)
+- **WebSocket**: Real-time updates for downloads and progress
 - **Cross-Platform**: Windows, macOS, Linux
 
 ## Project Structure
@@ -41,10 +43,19 @@ The app uses a **REST API architecture** instead of Electron IPC:
 JAMRA/
 ├── server/                 # Express backend
 │   ├── src/
-│   │   ├── database/      # SQLite schema & connection
-│   │   ├── routes/        # API routes
-│   │   ├── services/      # Business logic
-│   │   └── types/         # TypeScript types
+│   │   ├── app/           # Express app & route registration
+│   │   ├── core/          # Configuration, database, infrastructure
+│   │   ├── database/      # SQLite schema & migrations (legacy)
+│   │   ├── modules/       # Modular architecture
+│   │   │   ├── catalog/   # Catalog service + drivers
+│   │   │   ├── extensions/# Extension registry, loader, runtime
+│   │   │   ├── installer/ # Extension installation workflow
+│   │   │   └── settings/  # Server/client configuration
+│   │   ├── sdk/           # Extension SDK for developers
+│   │   ├── shared/        # Cross-cutting utilities (HTTP, logger)
+│   │   ├── services/      # Legacy service stubs (not used)
+│   │   ├── types/         # Legacy TypeScript types
+│   │   └── websocket/     # WebSocket handlers for real-time updates
 │   └── tsconfig.json
 ├── electron/              # Electron main process
 │   ├── main.ts           # Window management & server launcher
@@ -55,7 +66,10 @@ JAMRA/
 │   ├── pages/            # Route pages
 │   ├── store/            # Zustand stores
 │   ├── api/              # API client
-│   └── routes/           # React Router config
+│   ├── routes/           # React Router config
+│   └── constants/        # API endpoints, WebSocket events, UI constants
+├── resources/             # Extension bundles & assets
+│   └── extensions/       # Local extensions (weebcentral, batoto, etc.)
 └── data/                  # User data (created at runtime)
     ├── database/         # SQLite database
     └── downloads/        # Downloaded manga
@@ -117,9 +131,9 @@ pnpm build:server
 pnpm make
 ```
 
-### Alternative Windows Builder (NSIS Installer, Portable EXE)
+### Platform-Specific Builds (Electron Builder)
 
-If Squirrel fails on your environment, use Electron Builder:
+Build distributables for each platform:
 
 ```bash
 # Windows installer (NSIS) and portable EXE
@@ -136,8 +150,9 @@ Electron Builder is configured in `electron-builder.yml` and includes:
 
 - Files: `dist/**`, `dist-electron/**`, `server/dist/**`
 - ASAR unpack for native modules: `**/*.node`
-
-Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/icon.ico` and set `setupIcon` in `forge.config.js` to that file. A quick way to generate one is to convert your `icon-256.png` to `.ico` with a tool like `png-to-ico`.
+- Windows targets: NSIS installer + Portable EXE
+- macOS targets: DMG + ZIP
+- Linux targets: DEB
 
 ### Windows Prerequisites (better-sqlite3)
 
@@ -172,34 +187,39 @@ Note (Windows installer icon): If you want a custom Setup.exe icon, add `public/
 
 All endpoints accessible at `http://localhost:3000/api`
 
-### Manga
+### Catalog
 
-- `GET /api/manga` - List all manga
-- `GET /api/manga/:id` - Get manga by ID
-- `POST /api/manga` - Create manga
-- `PUT /api/manga/:id` - Update manga
-- `DELETE /api/manga/:id` - Delete manga
+- `GET /api/catalog` - Get cached catalog entries
+- `POST /api/catalog/sync` - Refresh catalog from remote repository
 
-### Chapters
+### Extensions
 
-- `GET /api/chapters?mangaId=:id` - Get chapters by manga ID
-- `GET /api/chapters/:id` - Get chapter by ID
-- `POST /api/chapters` - Create chapter
-- `DELETE /api/chapters/:id` - Delete chapter
+- `GET /api/extensions` - List installed extensions
+- `GET /api/extensions/:id` - Get extension details
+- `GET /api/extensions/:id/search` - Search manga via extension
+- `GET /api/extensions/:id/manga/:mangaId` - Get manga details + chapters
+- `GET /api/extensions/:id/manga/:mangaId/chapters` - Get chapters only
+- `GET /api/extensions/:id/manga/:mangaId/chapters/:chapterId/pages` - Get page URLs
+- `POST /api/extensions/install` - Install extension (in progress)
 
-### Library
+### Installer
 
-- `GET /api/library` - Get library items
-- `POST /api/library` - Add manga to library
-- `DELETE /api/library/:mangaId` - Remove from library
-- `GET /api/library/progress/:mangaId` - Get reading progress
-- `PUT /api/library/progress` - Update reading progress
+- Extension installation endpoints (in development)
 
-### Downloads
+### Settings
 
-- `GET /api/downloads` - Get download queue
-- `POST /api/downloads` - Add to download queue
-- `DELETE /api/downloads/:id` - Remove from queue
+- Server and client configuration endpoints
+
+### WebSocket Events
+
+Real-time updates via WebSocket:
+
+- `download:started` - Download started
+- `download:progress` - Download progress update
+- `download:page:complete` - Page download completed
+- `download:chapter:complete` - Chapter download completed
+- `download:failed` - Download failed
+- `download:cancelled` - Download cancelled
 
 ## Cross-Platform Notes
 
@@ -209,7 +229,7 @@ Better-SQLite3 uses **native bindings** which require special handling:
 
 1. **Native Bindings**: Rebuilt on install (`postinstall`) for the active Electron version.
 
-2. **Packaging targets**: Forge makers configured for Windows (Squirrel), macOS (DMG/ZIP), Linux (DEB). Build per-OS on native runners (no cross‑OS signing/building). For AppImage, consider Electron Builder.
+2. **Packaging targets**: Electron Builder configured for Windows (NSIS + Portable), macOS (DMG/ZIP), Linux (DEB). Build per-OS on native runners (no cross‑OS signing/building).
 
 3. **Testing**: Build and test on each target platform:
    - Windows x64/arm64
@@ -219,34 +239,58 @@ Better-SQLite3 uses **native bindings** which require special handling:
 4. **Troubleshooting**: If native bindings fail:
    - Ensure Node.js 20+ is installed
    - Run `pnpm exec electron-rebuild -f -w better-sqlite3`
-   - Check Forge logs and `logs/main.log`
+   - Check `logs/main.log` for errors
 
 ## Scripts
 
 - `pnpm dev` - Start Vite dev server + compile & launch Electron (auto)
 - `pnpm dev:server` - Start Express backend with watch mode
+- `pnpm dev:all` - Run both frontend and backend concurrently
 - `pnpm build` - Build frontend for production
 - `pnpm build:server` - Build backend for production
-- `pnpm build:electron` - Package Electron app for distribution
+- `pnpm make` - Package Electron app for current OS
+- `pnpm dist:win` - Build Windows installer + portable EXE
+- `pnpm dist:mac` - Build macOS DMG + ZIP
+- `pnpm dist:linux` - Build Linux DEB
 - `pnpm lint` - Run ESLint
+- `pnpm test:extensions` - Test extensions (in development)
 
 ## Routes
 
-- `/` - Library (home)
+- `/` - Home page
+- `/discover` - Discover new manga
 - `/library` - Library view
+- `/downloads` - Download queue
+- `/history` - Reading history
+- `/extensions` - Browse and manage extensions
+- `/settings` - App settings
 - `/manga/:id` - Manga details
 - `/reader/:chapterId` - Full-screen reader
-- `/downloads` - Download queue
-- `/settings` - App settings
 
-## Next Steps
+## Features & Roadmap
 
-1. **Implement Database Queries** - Connect services to SQLite
-2. **File Management** - Implement manga/chapter file operations
-3. **Download Manager** - Build download queue worker
-4. **Reader Features** - Add page preloading, keyboard shortcuts
-5. **Search & Filters** - Library search and filtering
-6. **Manga Sources** - Add web scraping for manga sources
+### Implemented
+
+- ✅ Extension system for manga sources
+- ✅ Local extension support (weebcentral, batoto)
+- ✅ WebSocket real-time updates
+- ✅ Download progress tracking
+- ✅ Modular backend architecture
+- ✅ Cross-platform builds (Windows, macOS, Linux)
+
+### In Progress
+
+- 🚧 Extension installer API
+- 🚧 Catalog sync from remote repositories
+- 🚧 Extension settings UI
+
+### Planned
+
+- 📋 Download queue worker with retry logic
+- 📋 Reader enhancements (page preloading, keyboard shortcuts)
+- 📋 Library search and advanced filtering
+- 📋 Reading history tracking
+- 📋 Manga recommendations
 
 ## License
 

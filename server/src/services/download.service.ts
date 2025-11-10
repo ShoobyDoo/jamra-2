@@ -9,17 +9,17 @@ export const downloadService = {
     return [];
   },
 
-  addToQueue: async (data: CreateDownloadInput): Promise<DownloadQueueItem> => {
+  addToQueue: async (_data: CreateDownloadInput): Promise<DownloadQueueItem> => {
     // TODO: Add to download queue
     throw new Error("Not implemented");
   },
 
-  removeFromQueue: async (id: string): Promise<void> => {
+  removeFromQueue: async (_id: string): Promise<void> => {
     // TODO: Remove from queue
     throw new Error("Not implemented");
   },
 
-  updateProgress: async (id: string, progress: number): Promise<void> => {
+  updateProgress: async (_id: string, _progress: number): Promise<void> => {
     // TODO: Update download progress
     throw new Error("Not implemented");
   },

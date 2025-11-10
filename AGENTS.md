@@ -37,14 +37,18 @@
 - Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `build:`, `chore:`
 - Keep commits scoped; one logical change per commit
 - PRs include: overview, screenshots (UI), linked issues, and test notes (how you verified build/run)
-- Avoid noise; remove dead config (e.g., Forge artifacts) when migrating tooling
+- Avoid noise; remove dead config when migrating tooling
 
 ## Platform & Packaging Notes
 
-- Electron Builder is used (NSIS installer + portable on Windows)
+- **Electron Builder** is used for packaging (configured in `electron-builder.yml`)
+  - Windows: NSIS installer + portable EXE
+  - macOS: DMG + ZIP
+  - Linux: DEB
 - Preload is built as CommonJS and unpacked: `dist-electron/preload.js`
 - Server schema is bundled via `extraResources` at `resources/server/schema.sql`
 - better-sqlite3 is external and rebuilt by `postinstall` (`electron-builder install-app-deps`)
+- Release output directory: `release/`
 
 ## Support & Troubleshooting
 

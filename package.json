@@ -1,23 +1,31 @@
 {
-  "name": "JAMRA",
+  "name": "jamra",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A full-featured, free, open-source Manga Reader app",
+  "author": {
+    "name": "ShoobyDoo"
+  },
   "type": "module",
-  "main": "dist-electron/main.js",
+  "main": "dist-electron/main.cjs",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:server\" --names \"frontend,backend \" --prefix-colors \"cyan,magenta\" --kill-others",
+    "dev:frontend": "vite",
     "dev:server": "tsx watch server/src/index.ts",
-    "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:server\" --names \"frontend,backend\" --prefix-colors \"cyan,magenta\" --kill-others",
-    "build": "tsc -b && vite build",
-    "build:server": "cd server && tsc -p tsconfig.json",
+    "build": "pnpm run build:frontend && pnpm run build:server",
+    "build:frontend": "tsc -b && vite build",
+    "build:extensions": "pnpm tsc -p tsconfig.extensions.json",
+    "build:server": "pnpm run build:extensions && pnpm --filter jamra-server run build",
+    "db:rebuild": "electron-rebuild -f -w better-sqlite3",
+    "test:extensions": "pnpm run build:server && pnpm --filter jamra-server run test:extensions",
     "build:clean": "rm -rf dist dist-electron out server/dist",
     "lint": "eslint .",
     "preview": "vite preview",
-    "make": "pnpm build && pnpm build:server && electron-builder --win",
-    "dist:win": "pnpm build && pnpm build:server && electron-builder --win",
-    "dist:mac": "pnpm build && pnpm build:server && electron-builder --mac",
-    "dist:linux": "pnpm build && pnpm build:server && electron-builder --linux",
-    "postinstall": "electron-builder install-app-deps"
+    "dist": "pnpm build && electron-rebuild -f -w better-sqlite3 && electron-builder",
+    "dist:win": "pnpm run dist -- --win",
+    "dist:mac": "pnpm run dist -- --mac",
+    "dist:linux": "pnpm run dist -- --linux",
+    "make": "pnpm run dist:win"
   },
   "dependencies": {
     "@mantine/carousel": "^8.3.6",
@@ -30,8 +38,10 @@
     "@tailwindcss/vite": "^4.1.16",
     "@tanstack/react-query": "^5.90.6",
     "better-sqlite3": "^12.4.1",
+    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dayjs": "^1.11.19",
+    "domhandler": "^5.0.3",
     "express": "^5.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -41,6 +51,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
     "@eslint/js": "^9.39.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
     "@tanstack/react-query-devtools": "^5.90.2",

@@ -1,3 +1,4 @@
+import { Divider } from "@mantine/core";
 import {
   IconBooks,
   IconCompass,
@@ -40,6 +41,7 @@ export const Navbar: React.FC = () => {
 
       {/* Bottom anchored section */}
       <div className="flex flex-col gap-1.5">
+        <Divider className="mb-1" />
         <QueueButton />
         <NavButton to={ROUTES.SETTINGS} label="Settings" icon={IconSettings} />
       </div>

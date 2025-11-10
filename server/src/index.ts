@@ -1,14 +1,17 @@
-import cors from "cors";
-import express from "express";
 import { createServer, Server as HttpServer } from "http";
 import type { Socket } from "node:net";
+import type { Application } from "express";
 import { WebSocketServer } from "ws";
-import { closeDatabase, getDatabase } from "./database/connection.js";
-import { runMigrations } from "./database/migrations.js";
-import chapterRoutes from "./routes/chapter.routes.js";
-import downloadRoutes from "./routes/download.routes.js";
-import libraryRoutes from "./routes/library.routes.js";
-import mangaRoutes from "./routes/manga.routes.js";
+import { createApp } from "./app/app.js";
+import type { AppContext } from "./app/context.js";
+import { loadAppConfig } from "./core/config/app-config.js";
+import {
+  closeDatabase,
+  getDatabase,
+  runMigrations,
+} from "./core/database/index.js";
+import { createHttpClient } from "./shared/http/http-client.js";
+import { createLogger } from "./shared/logger.js";
 import { initializeWebSocketServer } from "./websocket/handlers.js";
 
 // Store server instances for cleanup
@@ -25,38 +28,31 @@ const openSockets: Set<Socket> = new Set();
  * @returns Object containing the Express app and HTTP server instances
  */
 export const initializeServer = (): {
-  app: express.Application;
+  app: Application;
   server: HttpServer;
   wss: WebSocketServer;
 } => {
-  const app = express();
+  const config = loadAppConfig();
+  const logger = createLogger();
+  const httpClient = createHttpClient();
+  const db = getDatabase();
+  runMigrations(db);
 
-  // Create HTTP server (needed for WebSocket upgrade)
+  const context: AppContext = {
+    config,
+    db,
+    httpClient,
+    logger,
+  };
+
+  const app = createApp(context);
+
   const server = createServer(app);
   httpServer = server;
   // Track open TCP connections so we can destroy them on shutdown
   server.on("connection", (socket: Socket) => {
     openSockets.add(socket);
     socket.on("close", () => openSockets.delete(socket));
-  });
-
-  // Middleware
-  app.use(cors());
-  app.use(express.json());
-
-  // Initialize database
-  const db = getDatabase();
-  runMigrations(db);
-
-  // Register routes
-  app.use("/api/manga", mangaRoutes);
-  app.use("/api/chapters", chapterRoutes);
-  app.use("/api/library", libraryRoutes);
-  app.use("/api/downloads", downloadRoutes);
-
-  // Health check
-  app.get("/health", (req, res) => {
-    res.json({ status: "ok", timestamp: Date.now() });
   });
 
   // Initialize WebSocket server
@@ -104,21 +100,21 @@ export const shutdownServer = (): Promise<void> => {
       if (err) {
         console.error("Error closing HTTP server:", err);
       } else {
-        console.log("HTTP server closed");
-      }
+      console.log("HTTP server closed");
+    }
 
-      // 2. Close WebSocket connections
-      websocketServer?.clients.forEach((client) => {
+    // 2. Close WebSocket connections
+    websocketServer?.clients.forEach((client) => {
         client.close();
       });
       websocketServer?.close(() => {
         console.log("WebSocket server closed");
       });
 
-      // 3. Close database connection
-      try {
-        closeDatabase();
-        console.log("Database closed");
+    // 3. Close database connection
+    try {
+      closeDatabase();
+      console.log("Database closed");
       } catch (error) {
         console.error("Error closing database:", error);
       }

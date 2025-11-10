@@ -6,22 +6,22 @@ export const mangaService = {
     return [];
   },
 
-  getById: async (id: string): Promise<Manga | null> => {
+  getById: async (_id: string): Promise<Manga | null> => {
     // TODO: Query database
     return null;
   },
 
-  create: async (data: CreateMangaInput): Promise<Manga> => {
+  create: async (_data: CreateMangaInput): Promise<Manga> => {
     // TODO: Insert into database
     throw new Error("Not implemented");
   },
 
-  update: async (id: string, data: Partial<Manga>): Promise<Manga> => {
+  update: async (_id: string, _data: Partial<Manga>): Promise<Manga> => {
     // TODO: Update database
     throw new Error("Not implemented");
   },
 
-  delete: async (id: string): Promise<void> => {
+  delete: async (_id: string): Promise<void> => {
     // TODO: Delete from database
     throw new Error("Not implemented");
   },
