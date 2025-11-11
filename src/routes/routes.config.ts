@@ -26,17 +26,10 @@ export const ROUTES = {
 // Type for route paths
 // export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];
 
-// // Helper function to build dynamic routes
-// export const buildRoute = {
-//   /**
-//    * Build manga details route
-//    * Example: buildRoute.mangaDetails('123') => '/manga/123'
-//    */
-//   mangaDetails: (id: string) => `/manga/${id}`,
-
-//   /**
-//    * Build reader route
-//    * Example: buildRoute.reader('chapter-456') => '/reader/chapter-456'
-//    */
-//   reader: (chapterId: string) => `/reader/${chapterId}`,
-// } as const;
+/**
+ * Helper builders for dynamic routes
+ */
+export const buildRoute = {
+  mangaDetails: (id: string) => `/manga/${id}`,
+  reader: (chapterId: string) => `/reader/${chapterId}`,
+} as const;

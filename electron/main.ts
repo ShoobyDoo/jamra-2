@@ -1,10 +1,35 @@
-import { app, BrowserWindow, nativeImage } from "electron";
+import {
+  app,
+  BrowserWindow,
+  Menu,
+  Tray,
+  ipcMain,
+  nativeImage,
+  shell,
+} from "electron";
 import fs from "fs";
 import { Server as HttpServer } from "http";
 import path from "path";
+import type {
+  PreferenceKey,
+  PreferenceValueMap,
+} from "../src/types/electron-api";
 import { initializeServer, shutdownServer } from "../server/dist/index.js";
+import { PreferencesStore, PREFERENCE_DEFAULTS } from "./preferences-store";
+import { IPC_CHANNELS } from "./ipc-channels";
 
 // No Squirrel handlers — Electron Builder (NSIS/portable) is used on Windows
+
+const isDev = !app.isPackaged;
+const resolvePort = (value: string | undefined): number => {
+  const parsed = Number.parseInt(`${value ?? ""}`, 10);
+  return Number.isFinite(parsed) ? parsed : 3000;
+};
+const SERVER_PORT = resolvePort(process.env.PORT);
+const SERVER_HOST = process.env.SERVER_HOST ?? "localhost";
+const SERVER_BASE_URL =
+  process.env.SERVER_BASE_URL ?? `http://${SERVER_HOST}:${SERVER_PORT}`;
+const SERVER_HEALTH_URL = `${SERVER_BASE_URL}/health`;
 
 // Minimal file logger
 let logFilePath: string | null = null;
@@ -101,7 +126,164 @@ const setupLogging = (): void => {
 const __dirname = app.getAppPath();
 
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray | null = null;
 let httpServer: HttpServer | null = null;
+let preferencesStore: PreferencesStore | null = null;
+let isQuittingApp = false;
+let isShuttingDownServer = false;
+
+const resolveAssetPath = (assetName: string): string =>
+  isDev
+    ? path.join(process.cwd(), "public", assetName)
+    : path.join(process.resourcesPath, assetName);
+
+const shouldMinimizeToTray = (): boolean =>
+  preferencesStore?.get("closeButtonMinimizesToTray") ??
+  PREFERENCE_DEFAULTS.closeButtonMinimizesToTray;
+
+const getPreferenceDefault = <K extends PreferenceKey>(
+  key: K,
+): PreferenceValueMap[K] => PREFERENCE_DEFAULTS[key];
+
+const broadcastPreferenceChange = <K extends PreferenceKey>(
+  key: K,
+  value: PreferenceValueMap[K],
+): void => {
+  for (const window of BrowserWindow.getAllWindows()) {
+    window.webContents.send(IPC_CHANNELS.preferences.changed, { key, value });
+  }
+};
+
+const ensurePreferencesStore = (): PreferencesStore => {
+  if (!preferencesStore) {
+    throw new Error("Preferences store not initialized");
+  }
+  return preferencesStore;
+};
+
+const hideWindowToTray = (): void => {
+  if (!mainWindow) return;
+  mainWindow.setSkipTaskbar(true);
+  mainWindow.hide();
+  if (process.platform === "darwin") {
+    app.dock?.hide();
+  }
+};
+
+const showMainWindow = (): void => {
+  if (!mainWindow) {
+    createWindow();
+  }
+  if (!mainWindow) {
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.setSkipTaskbar(false);
+  mainWindow.show();
+  mainWindow.focus();
+  if (process.platform === "darwin") {
+    app.dock?.show();
+  }
+};
+
+const requestAppQuit = (): void => {
+  isQuittingApp = true;
+  if (mainWindow) {
+    mainWindow.close();
+  } else {
+    app.quit();
+  }
+};
+
+const openServerInBrowser = async (): Promise<void> => {
+  try {
+    await shell.openExternal(SERVER_BASE_URL);
+  } catch (error) {
+    console.error("Failed to open browser:", error);
+  }
+};
+
+const createTray = (): void => {
+  if (tray) return;
+  const trayIconName =
+    process.platform === "win32" ? "jamra_icon.ico" : "jamra_icon_256.png";
+  let trayImage = nativeImage.createFromPath(resolveAssetPath(trayIconName));
+  if (trayImage.isEmpty()) {
+    trayImage = nativeImage.createFromPath(resolveAssetPath("icon.png"));
+  }
+  if (process.platform === "darwin") {
+    trayImage.setTemplateImage(true);
+  }
+  tray = new Tray(trayImage);
+  tray.setToolTip("JAMRA Manga Reader");
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Show Window",
+      click: () => {
+        showMainWindow();
+      },
+    },
+    {
+      label: "Open in Browser",
+      click: () => {
+        void openServerInBrowser();
+      },
+    },
+    { type: "separator" },
+    {
+      label: "Exit",
+      click: () => requestAppQuit(),
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+  tray.on("click", () => {
+    showMainWindow();
+  });
+};
+
+const registerIpcHandlers = (): void => {
+  ipcMain.handle(IPC_CHANNELS.preferences.get, (_event, key: PreferenceKey) => {
+    try {
+      return ensurePreferencesStore().get(key);
+    } catch (error) {
+      console.error("Failed to get preference", error);
+      return getPreferenceDefault(key);
+    }
+  });
+
+  ipcMain.handle(
+    IPC_CHANNELS.preferences.set,
+    (_event, key: PreferenceKey, value: PreferenceValueMap[PreferenceKey]) => {
+      try {
+        const next = ensurePreferencesStore().set(
+          key,
+          value as PreferenceValueMap[PreferenceKey],
+        );
+        broadcastPreferenceChange(key, next);
+        return next;
+      } catch (error) {
+        console.error("Failed to set preference", error);
+        return getPreferenceDefault(key);
+      }
+    },
+  );
+
+  ipcMain.handle(IPC_CHANNELS.app.showWindow, () => {
+    showMainWindow();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.app.openBrowser, () => {
+    void openServerInBrowser();
+  });
+
+  ipcMain.handle(IPC_CHANNELS.app.exit, () => {
+    requestAppQuit();
+  });
+};
 
 /**
  * Start the Express server in the Electron main process.
@@ -109,18 +291,17 @@ let httpServer: HttpServer | null = null;
  * In production: Server runs directly in the Electron main process.
  */
 const startServer = async (): Promise<void> => {
-  const isDev = !app.isPackaged;
-
   // Set environment variables for server
   process.env.DB_PATH = app.getPath("userData");
   process.env.RESOURCES_PATH = process.resourcesPath;
   process.env.ELECTRON_PACKAGED = app.isPackaged ? "true" : "false";
 
   if (isDev) {
-    console.log("Development mode: Server runs via tsx watch (separate process)");
+    console.log(
+      `Development mode: Server runs via tsx watch on ${SERVER_BASE_URL}`,
+    );
     console.log("Skipping server initialization in Electron");
-    console.log("Waiting for backend server at http://localhost:3000...");
-    // In dev mode, don't start the server - tsx watch handles it
+    console.log(`Waiting for backend server at ${SERVER_BASE_URL}...`);
     return;
   }
 
@@ -131,12 +312,11 @@ const startServer = async (): Promise<void> => {
     const { server } = initializeServer();
     httpServer = server;
 
-    // Start listening on port 3000
     await new Promise<void>((resolve, reject) => {
-      server.listen(3000, () => {
-        console.log("✅ Server running at http://localhost:3000");
-        console.log("✅ API available at http://localhost:3000/api");
-        console.log("🔌 WebSocket server available at ws://localhost:3000");
+      server.listen(SERVER_PORT, () => {
+        console.log(`✅ Server running at ${SERVER_BASE_URL}`);
+        console.log(`✅ API available at ${SERVER_BASE_URL}/api`);
+        console.log(`🔌 WebSocket server available at ws://${SERVER_HOST}:${SERVER_PORT}`);
         resolve();
       });
 
@@ -160,7 +340,7 @@ const checkServerHealth = async (): Promise<boolean> => {
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch("http://localhost:3000/health");
+      const response = await fetch(SERVER_HEALTH_URL);
       if (response.ok) {
         console.log("✅ Server health check passed");
         return true;
@@ -178,7 +358,9 @@ const checkServerHealth = async (): Promise<boolean> => {
  * Create the Electron browser window.
  */
 const createWindow = (): void => {
-  const isDev = !app.isPackaged;
+  if (mainWindow) {
+    return;
+  }
 
   // Preload script must be outside ASAR (security requirement)
   const preloadPath = isDev
@@ -190,32 +372,51 @@ const createWindow = (): void => {
         "preload.js",
       );
 
-  // Icon path resolution for dev and production
-  const iconPath = isDev
-    ? path.join(process.cwd(), "public", "jamra_icon.ico")
-    : path.join(process.resourcesPath, "jamra_icon.ico");
+  const iconFile =
+    process.platform === "win32" ? "jamra_icon.ico" : "jamra_icon_256.png";
+  const iconPath = resolveAssetPath(iconFile);
 
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
     icon: nativeImage.createFromPath(iconPath),
+    show: true,
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
-  mainWindow.on("closed", () => {
+
+  mainWindow.on("close", (event) => {
+    if (!isQuittingApp && shouldMinimizeToTray()) {
+      event.preventDefault();
+      hideWindowToTray();
+      return;
+    }
     mainWindow = null;
+  });
+
+  mainWindow.on("show", () => {
+    mainWindow?.setSkipTaskbar(false);
+    if (process.platform === "darwin") {
+      app.dock?.show();
+    }
+  });
+
+  mainWindow.on("hide", () => {
+    if (process.platform === "darwin") {
+      app.dock?.hide();
+    }
   });
 
   // Load dev server URL (Vite runs on port 5173)
   // In production, load index.html by file path for cross‑platform correctness
   if (isDev) {
-    mainWindow.loadURL("http://localhost:5173");
+    void mainWindow.loadURL("http://localhost:5173");
   } else {
     const indexPath = path.join(__dirname, "dist", "index.html");
-    mainWindow.loadFile(indexPath);
+    void mainWindow.loadFile(indexPath);
   }
 };
 
@@ -232,6 +433,8 @@ app.whenReady().then(async () => {
     }
 
     setupLogging();
+    preferencesStore = new PreferencesStore();
+    registerIpcHandlers();
 
     // Start Express server in main process
     await startServer();
@@ -245,13 +448,12 @@ app.whenReady().then(async () => {
       return;
     }
 
-    // Server is healthy, create window
+    // Server is healthy, initialize UI + tray
     createWindow();
+    createTray();
 
     app.on("activate", () => {
-      if (BrowserWindow.getAllWindows().length === 0) {
-        createWindow();
-      }
+      showMainWindow();
     });
   } catch (error: unknown) {
     console.error(
@@ -262,12 +464,8 @@ app.whenReady().then(async () => {
   }
 });
 
-// Gracefully shutdown server when app quits
-app.on("window-all-closed", async () => {
-  // Only shutdown if server is running (production mode)
-  if (httpServer) {
-    await shutdownServer();
-  }
+// Always keep the app running in background until explicitly quit
+app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
@@ -275,20 +473,35 @@ app.on("window-all-closed", async () => {
 
 // Ensure cleanup on app quit
 app.on("before-quit", async (event) => {
-  if (httpServer) {
-    event.preventDefault(); // Prevent immediate quit
-    // Force-exit fallback in case of stubborn sockets
-    const forceExit = setTimeout(() => {
-      try {
-        app.exit(0);
-      } catch (err) {
-        console.warn("app.exit failed, forcing process.exit(0)", err);
-        process.exit(0);
-      }
-    }, 8000);
+  isQuittingApp = true;
+  tray?.destroy();
+  tray = null;
+
+  if (!httpServer || isShuttingDownServer) {
+    return;
+  }
+
+  event.preventDefault();
+  isShuttingDownServer = true;
+
+  // Force-exit fallback in case of stubborn sockets
+  const forceExit = setTimeout(() => {
+    try {
+      app.exit(0);
+    } catch (err) {
+      console.warn("app.exit failed, forcing process.exit(0)", err);
+      process.exit(0);
+    }
+  }, 8000);
+
+  try {
     await shutdownServer();
-    httpServer = null;
+  } catch (error) {
+    console.error("Error shutting down server:", error);
+  } finally {
     clearTimeout(forceExit);
-    app.quit(); // Now quit after cleanup
+    httpServer = null;
+    isShuttingDownServer = false;
+    app.quit();
   }
 });

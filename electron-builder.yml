@@ -17,6 +17,10 @@ npmRebuild: true
 extraResources:
   - from: server/src/database/schema.sql
     to: server/schema.sql
+  - from: public/jamra_icon_256.png
+    to: jamra_icon_256.png
+  - from: public/icon.png
+    to: icon.png
 win:
   target:
     - target: nsis

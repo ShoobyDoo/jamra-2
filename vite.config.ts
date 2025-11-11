@@ -14,7 +14,13 @@ export default defineConfig({
         entry: "electron/main.ts",
         onstart({ startup }) {
           // Start Electron (not Node.js)
-          startup();
+          // Wrap in try-catch to handle stale PID cleanup errors gracefully
+          try {
+            startup();
+          } catch (error) {
+            console.warn("Electron startup warning:", error instanceof Error ? error.message : error);
+            // Continue anyway - process cleanup errors are usually harmless
+          }
         },
         vite: {
           build: {

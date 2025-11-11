@@ -1,4 +1,3 @@
-import { NotImplementedError } from "../../shared/errors.js";
 import type {
   SettingsRepository,
   Setting,
@@ -12,14 +11,18 @@ export class SettingsService {
     key: string,
     scope?: SettingScope,
   ): Promise<Setting<T> | null> {
-    throw new NotImplementedError(`Settings get ${scope ?? "global"}:${key}`);
+    return this.repository.get<T>(key, scope);
   }
 
   async set<T>(key: string, value: T, scope?: SettingScope): Promise<void> {
-    throw new NotImplementedError(`Settings set ${scope ?? "global"}:${key}`);
+    return this.repository.set(key, value, scope);
   }
 
   async list(scope?: SettingScope): Promise<Setting[]> {
-    throw new NotImplementedError(`Settings list ${scope ?? "global"}`);
+    return this.repository.list(scope);
+  }
+
+  async remove(key: string): Promise<void> {
+    return this.repository.remove(key);
   }
 }

@@ -2,6 +2,8 @@ import { Text } from "@mantine/core";
 import React from "react";
 import { LAYOUT } from "../../constants/ui";
 import { SearchBar } from "../ui/SearchBar";
+import { NavigationControls } from "../navigation/NavigationControls";
+import { Breadcrumbs } from "../navigation/Breadcrumbs";
 
 export const Header: React.FC = () => {
   return (
@@ -21,10 +23,13 @@ export const Header: React.FC = () => {
         </div>
       </div>
 
-      {/* Right section - Breadcrumbs and Search with space-between */}
-      <div className="flex flex-1 items-center justify-between px-3">
-        <div>Breadcrumbs</div>
-        <SearchBar />
+      {/* Right section - Breadcrumbs on left, Navigation controls and Search on right */}
+      <div className="flex flex-1 items-center justify-between px-3 gap-3">
+        <Breadcrumbs />
+        <div className="flex items-center gap-3">
+          <NavigationControls />
+          <SearchBar />
+        </div>
       </div>
     </div>
   );

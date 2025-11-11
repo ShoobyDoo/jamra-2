@@ -24,6 +24,12 @@ A feature-rich manga reader desktop application built with Electron, React, and 
 - **Electron 38+** - Desktop wrapper
 - **Electron Builder** - Packaging (NSIS/Portable/DMG/DEB)
 
+### Background Mode & Tray Controls
+
+- Closing the Electron window now hides JAMRA to the system tray (default behavior) so the bundled server keeps running.
+- Use the tray menu to show the window again, open the app in your browser at `http://localhost:<configured-port>`, or exit completely.
+- Toggle “Close button minimizes to tray” from **Settings → Window Behavior** if you prefer the classic quit-on-close workflow.
+
 > **Note**: Version numbers listed above represent major versions. For exact dependency versions, refer to `package.json`.
 
 ## Architecture

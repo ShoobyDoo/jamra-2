@@ -1,5 +1,6 @@
 import { createServer, Server as HttpServer } from "http";
 import type { Socket } from "node:net";
+import { pathToFileURL } from "node:url";
 import type { Application } from "express";
 import { WebSocketServer } from "ws";
 import { createApp } from "./app/app.js";
@@ -134,7 +135,8 @@ let isMainModule = false;
 try {
   const arg1 = process.argv?.[1];
   if (typeof arg1 === "string" && arg1.length > 0) {
-    const normalized = `file://${arg1.replace(/\\/g, "/")}`;
+    // Use pathToFileURL for proper cross-platform file:// URL conversion
+    const normalized = pathToFileURL(arg1).href;
     isMainModule = import.meta.url === normalized;
   }
 } catch {

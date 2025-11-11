@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { NotImplementedError } from "../../shared/errors.js";
 import type { SettingsService } from "./settings.service.js";
 import type { SettingScope } from "./settings.types.js";
 
@@ -12,13 +11,32 @@ export class SettingsController {
       const settings = await this.service.list(scope);
       res.json({ settings });
     } catch (error) {
-      if (error instanceof NotImplementedError) {
-        res
-          .status(501)
-          .json({ message: "Settings list not implemented yet." });
+      console.error("Failed to list settings:", error);
+      res.status(500).json({ message: "Failed to list settings." });
+    }
+  };
+
+  get = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { key } = req.params;
+      const scope = req.query.scope as SettingScope | undefined;
+
+      if (!key) {
+        res.status(400).json({ message: "Key is required" });
         return;
       }
-      res.status(500).json({ message: "Failed to list settings." });
+
+      const setting = await this.service.get(key, scope);
+
+      if (!setting) {
+        res.status(404).json({ message: "Setting not found" });
+        return;
+      }
+
+      res.json({ setting });
+    } catch (error) {
+      console.error("Failed to get setting:", error);
+      res.status(500).json({ message: "Failed to get setting." });
     }
   };
 
@@ -38,13 +56,25 @@ export class SettingsController {
       await this.service.set(key, value, scope);
       res.status(204).send();
     } catch (error) {
-      if (error instanceof NotImplementedError) {
-        res
-          .status(501)
-          .json({ message: "Settings update not implemented yet." });
+      console.error("Failed to update setting:", error);
+      res.status(500).json({ message: "Failed to update setting." });
+    }
+  };
+
+  remove = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { key } = req.params;
+
+      if (!key) {
+        res.status(400).json({ message: "Key is required" });
         return;
       }
-      res.status(500).json({ message: "Failed to update settings." });
+
+      await this.service.remove(key);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to remove setting:", error);
+      res.status(500).json({ message: "Failed to remove setting." });
     }
   };
 }
