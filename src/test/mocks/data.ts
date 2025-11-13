@@ -4,19 +4,19 @@
  */
 
 import type {
-  LibraryItem,
-  LibraryStats,
+  CatalogEntry,
+  ChapterDetails,
   Download,
   DownloadStats,
   Extension,
-  CatalogEntry,
   ExtensionSearchResult,
-  MangaDetails,
-  ChapterDetails,
-  ReaderChapterData,
-  Setting,
   InstallJob,
+  LibraryItem,
+  LibraryStats,
+  MangaDetails,
+  ReaderChapterData,
   ReadingProgress,
+  Setting,
 } from "../../types";
 
 export const mockSettings: Setting[] = [

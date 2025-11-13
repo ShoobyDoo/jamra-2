@@ -4,7 +4,13 @@
  * `docs/backend/endpoints.md` and server-side DTOs.
  */
 
-export type SettingScope = "app" | "catalog" | "extensions" | "sandbox";
+export type SettingScope =
+  | "app"
+  | "catalog"
+  | "extensions"
+  | "sandbox"
+  | "reader"
+  | "downloads";
 
 export interface Setting<T = unknown> {
   key: string;
