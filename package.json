@@ -8,6 +8,7 @@
   },
   "type": "module",
   "main": "dist-electron/main.cjs",
+  "packageManager": "pnpm@10.22.0",
   "scripts": {
     "dev": "concurrently \"pnpm dev:frontend\" \"pnpm dev:server\" --names \"frontend,backend \" --prefix-colors \"cyan,magenta\" --kill-others",
     "dev:frontend": "vite",
