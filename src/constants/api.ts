@@ -1,36 +1,77 @@
 /**
- * API Constants - Manga Reader Backend
- * Centralized API configuration and endpoint constants
+ * API Constants - JAMRA backend
+ * Centralised routes + base URL helpers shared across hooks/services.
  */
 
 /**
  * Base API URL
- * Uses VITE_API_URL from environment or defaults to localhost:3000
+ * Defaults to http://localhost:3000 and can be overridden via VITE_API_URL.
  */
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 /**
- * API Endpoints
- * Only includes endpoints used in 2+ places
- * Single-use endpoints can be inline in query hooks
+ * REST endpoint paths (always include the `/api` prefix).
  */
-export const ENDPOINTS = {
-  // Manga endpoints (used in list + search)
-  MANGA: "/manga",
-  MANGA_BY_ID: (id: string) => `/manga/${id}`,
+export const API_PATHS = {
+  health: "/health",
 
-  // Chapter endpoints
-  CHAPTERS: "/chapters",
-  CHAPTER_BY_ID: (id: string) => `/chapters/${id}`,
-  CHAPTERS_BY_MANGA: (mangaId: string) => `/chapters?mangaId=${mangaId}`,
+  settings: "/api/settings",
+  setting: (key: string) => `/api/settings/${encodeURIComponent(key)}`,
 
-  // Library endpoints (used in get, add, remove)
-  LIBRARY: "/library",
-  LIBRARY_BY_MANGA: (mangaId: string) => `/library/${mangaId}`,
-  LIBRARY_PROGRESS: (mangaId: string) => `/library/progress/${mangaId}`,
+  catalog: "/api/catalog",
+  catalogSync: "/api/catalog/sync",
 
-  // Download endpoints (used in queue, add)
-  DOWNLOADS: "/downloads",
-  DOWNLOAD_BY_ID: (id: string) => `/downloads/${id}`,
+  extensions: "/api/extensions",
+  extension: (extensionId: string) => `/api/extensions/${extensionId}`,
+  extensionSearch: (extensionId: string) =>
+    `/api/extensions/${extensionId}/search`,
+  extensionManga: (extensionId: string, mangaId: string) =>
+    `/api/extensions/${extensionId}/manga/${mangaId}`,
+  extensionChapters: (extensionId: string, mangaId: string) =>
+    `/api/extensions/${extensionId}/manga/${mangaId}/chapters`,
+  extensionPages: (
+    extensionId: string,
+    mangaId: string,
+    chapterId: string,
+  ) =>
+    `/api/extensions/${extensionId}/manga/${mangaId}/chapters/${chapterId}/pages`,
+  extensionsInstall: "/api/extensions/install",
+  extensionsInstallJob: (jobId: string) =>
+    `/api/extensions/install/${jobId}`,
+
+  installer: "/api/installer",
+  installerJob: (jobId: string) => `/api/installer/install/${jobId}`,
+
+  library: "/api/library",
+  libraryItem: (libraryId: string) => `/api/library/${libraryId}`,
+  libraryFavorite: (libraryId: string) =>
+    `/api/library/${libraryId}/favorite`,
+  libraryProgress: (libraryId: string) =>
+    `/api/library/${libraryId}/progress`,
+  libraryChapterProgress: (libraryId: string, chapterId: string) =>
+    `/api/library/${libraryId}/chapters/${chapterId}/progress`,
+  libraryLastRead: (libraryId: string) =>
+    `/api/library/${libraryId}/last-read`,
+  libraryStats: "/api/library/stats",
+
+  downloads: "/api/downloads",
+  downloadDetails: (downloadId: string) =>
+    `/api/downloads/${downloadId}`,
+  downloadStats: "/api/downloads/stats",
+
+  readerChapter: (libraryId: string, chapterId: string) =>
+    `/api/reader/${libraryId}/chapters/${chapterId}`,
+  readerNextChapter: (libraryId: string, chapterId: string) =>
+    `/api/reader/${libraryId}/chapters/${chapterId}/next`,
+  readerPreviousChapter: (libraryId: string, chapterId: string) =>
+    `/api/reader/${libraryId}/chapters/${chapterId}/previous`,
+  readerPage: (
+    libraryId: string,
+    chapterId: string,
+    pageNumber: number,
+  ) =>
+    `/api/reader/${libraryId}/chapters/${chapterId}/pages/${pageNumber}`,
 } as const;
+
+export type ApiPathKey = keyof typeof API_PATHS;

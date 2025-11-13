@@ -9,7 +9,7 @@ const reactHooksRules = reactHooks.configs["recommended-latest"].rules ?? {};
 const reactRefreshConfig = reactRefresh.configs.vite;
 
 export default defineConfig([
-  globalIgnores(["dist"]),
+  globalIgnores(["dist", "server/dist"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [js.configs.recommended, tseslint.configs.recommended],

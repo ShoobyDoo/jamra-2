@@ -16,8 +16,8 @@ export const ROUTES = {
   SETTINGS: "/settings",
 
   // Dynamic routes (use buildRoute helper)
-  MANGA_DETAILS: "/manga/:id",
-  READER: "/reader/:chapterId",
+  MANGA_DETAILS: "/manga/:extensionId/:mangaId",
+  READER: "/reader/:libraryId/chapters/:chapterId",
 
   // Error routes
   NOT_FOUND: "*",
@@ -30,6 +30,8 @@ export const ROUTES = {
  * Helper builders for dynamic routes
  */
 export const buildRoute = {
-  mangaDetails: (id: string) => `/manga/${id}`,
-  reader: (chapterId: string) => `/reader/${chapterId}`,
+  mangaDetails: (extensionId: string, mangaId: string) =>
+    `/manga/${extensionId}/${mangaId}`,
+  reader: (libraryId: string, chapterId: string) =>
+    `/reader/${libraryId}/chapters/${chapterId}`,
 } as const;

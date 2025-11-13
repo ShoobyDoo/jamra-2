@@ -3,6 +3,8 @@ import type {
   ExtensionRepositoryIndex,
   RepositoryInfo,
   ExtensionMetadata,
+  SchemaVersion,
+  ExtensionLanguage,
 } from "../types/repository-schema.types.js";
 import {
   SUPPORTED_SCHEMA_VERSIONS,
@@ -35,7 +37,7 @@ export const validateRepositoryIndex = (
   }
 
   // 3. Extract fields
-  const { version, repository, extensions } = data as any;
+  const { version, repository, extensions } = data as Record<string, unknown>;
 
   // 4. Validate version field
   if (!version || typeof version !== "string") {
@@ -45,7 +47,8 @@ export const validateRepositoryIndex = (
   }
 
   // 5. Check schema version compatibility
-  if (!SUPPORTED_SCHEMA_VERSIONS.includes(version as any)) {
+  const schemaVersion = version as SchemaVersion;
+  if (!SUPPORTED_SCHEMA_VERSIONS.includes(schemaVersion)) {
     throw new ValidationError(
       `Unsupported schema version: ${version}. Supported versions: ${SUPPORTED_SCHEMA_VERSIONS.join(", ")}`,
     );
@@ -85,7 +88,7 @@ const validateRepositoryObject = (repo: unknown): RepositoryInfo => {
     );
   }
 
-  const { name, url, author, description } = repo as any;
+  const { name, url, author, description } = repo as Record<string, unknown>;
 
   // Validate required string fields
   if (!name || typeof name !== "string") {
@@ -183,7 +186,7 @@ const validateExtensionObject = (
     entrypoint,
     sourceUrl,
     dependencies,
-  } = ext as any;
+  } = ext as Record<string, unknown>;
 
   // Validate required string fields
   if (!id || typeof id !== "string") {
@@ -235,7 +238,8 @@ const validateExtensionObject = (
   }
 
   // Validate language enum
-  if (!SUPPORTED_LANGUAGES.includes(language as any)) {
+  const extensionLanguage = language as ExtensionLanguage;
+  if (!SUPPORTED_LANGUAGES.includes(extensionLanguage)) {
     throw new ValidationError(
       `Invalid extension[${index}].language: must be one of ${SUPPORTED_LANGUAGES.join(", ")}`,
     );
@@ -279,7 +283,7 @@ const validateExtensionObject = (
     version,
     author,
     description,
-    language: language as "typescript" | "javascript",
+    language: extensionLanguage,
     entrypoint,
     sourceUrl,
     dependencies: validatedDependencies,

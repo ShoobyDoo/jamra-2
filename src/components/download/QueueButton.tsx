@@ -1,80 +1,35 @@
 import { Badge, Popover } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { IconStack } from "@tabler/icons-react";
-import { useQueryClient } from "@tanstack/react-query";
-import React, { useEffect } from "react";
-import { WS_EVENTS } from "../../constants/websocket";
-import { downloadKeys } from "../../hooks/queries/useDownloadQueries";
-import { useWebSocket } from "../../hooks/useWebSocket";
-import type { DownloadProgressPayload, DownloadQueueItem } from "../../types";
+import React from "react";
+import { useDownloadQueue } from "../../hooks/queries/useDownloadQueries";
+import type { DownloadQueueItem } from "../../types";
 import { DownloadPopoverContent } from "./DownloadPopoverContent";
+import { useDownloadSubscriptions } from "../../hooks/useDownloadSubscription";
 
 /**
  * Queue button with badge indicator and popover showing active downloads
  */
 export const QueueButton: React.FC = () => {
   const [popoverOpened, { close, toggle }] = useDisclosure(false);
-  const queryClient = useQueryClient();
 
   // Fetch download queue
-  // const {
-  //   data: downloads = [
-  //     {
-  //       id: "test-1",
-  //       mangaId: "one-piece",
-  //       chapterId: "ch-1",
-  //       status: "downloading",
-  //       progress: 47,
-  //       createdAt: 1762042088,
-  //     },
-  //   ],
-  // } = useDownloadQueue();
-
-  const downloads: DownloadQueueItem[] = [
-    {
-      id: "test-1",
-      mangaId: "one-piece",
-      chapterId: "ch-1",
-      status: "downloading",
-      progress: 47,
-      createdAt: 1762042088,
-    },
-    {
-      id: "test-2",
-      mangaId: "one-piece",
-      chapterId: "ch-1",
-      status: "downloading",
-      progress: 47,
-      createdAt: 1762042088,
-    },
-    {
-      id: "test-3",
-      mangaId: "one-piece",
-      chapterId: "ch-1",
-      status: "downloading",
-      progress: 47,
-      createdAt: 1762042088,
-    },
-  ];
-
-  // Subscribe to WebSocket download progress events
-  const progressUpdate = useWebSocket<DownloadProgressPayload>(
-    WS_EVENTS.DOWNLOAD_PROGRESS,
-  );
-
-  // Invalidate query cache when WebSocket event received
-  useEffect(() => {
-    if (progressUpdate) {
-      queryClient.invalidateQueries({ queryKey: downloadKeys.queue });
-    }
-  }, [progressUpdate, queryClient]);
+  const { data } = useDownloadQueue();
+  const downloads: DownloadQueueItem[] = data?.downloads ?? [];
 
   // Calculate active download count
   const activeDownloads = downloads.filter(
     (d: DownloadQueueItem) =>
-      d.status === "pending" || d.status === "downloading",
+      d.status === "queued" || d.status === "downloading",
   );
   const activeCount = activeDownloads.length;
+
+  // Subscribe to WebSocket events for active downloads when popover is open
+  // This reduces traffic by only subscribing to relevant downloads
+  const downloadIdsToSubscribe = popoverOpened
+    ? activeDownloads.map((d) => d.id)
+    : undefined;
+  useDownloadSubscriptions(downloadIdsToSubscribe);
 
   const handleClick = () => {
     toggle();
@@ -99,7 +54,7 @@ export const QueueButton: React.FC = () => {
             aria-label={`Queue${activeCount > 0 ? ` (${activeCount} active)` : ""}`}
           >
             <IconStack size={24} stroke={1.5} />
-            <span className="text-center text-[10px] leading-none font-medium tracking-wide">
+            <span className="text-center text-[11px] leading-none font-medium tracking-wide">
               Queue
             </span>
           </button>

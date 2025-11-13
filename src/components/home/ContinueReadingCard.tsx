@@ -1,36 +1,37 @@
 import { ActionIcon, Card, Progress, Text, Tooltip } from "@mantine/core";
 import { IconBook } from "@tabler/icons-react";
 import React from "react";
+import { formatRelativeTime } from "../../lib/date";
+import type { ContinueReadingEntry } from "../../types";
 
 interface ContinueReadingCardProps {
-  id: string;
-  title: string;
-  coverUrl?: string;
-  lastChapter: number;
-  progress: number;
-  updatedAt: string;
-  onContinue?: (id: string) => void;
-  onOpenDetails?: (id: string) => void;
+  entry: ContinueReadingEntry;
+  onContinue?: (entry: ContinueReadingEntry) => void;
+  onOpenDetails?: (entry: ContinueReadingEntry) => void;
 }
 
 export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
-  id,
-  title,
-  coverUrl,
-  lastChapter,
-  progress,
-  updatedAt,
+  entry,
   onContinue,
   onOpenDetails,
 }) => {
   const handleContinue = () => {
-    onContinue?.(id);
+    onContinue?.(entry);
   };
 
   const handleDetailsClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    onOpenDetails?.(id);
+    onOpenDetails?.(entry);
   };
+
+  const progressLabel =
+    entry.progressPercent !== undefined
+      ? `${entry.progressPercent}%`
+      : entry.totalPages
+        ? `${entry.pageNumber}/${entry.totalPages}`
+        : "Resume";
+
+  const relativeUpdatedAt = formatRelativeTime(entry.lastReadAt ?? entry.updatedAt);
 
   return (
     <Card
@@ -43,10 +44,10 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
     >
       <div
         className={`absolute inset-0 bg-cover bg-center contrast-95 saturate-100 transition-transform duration-500 ease-out group-hover:scale-105 group-hover:contrast-105 group-hover:saturate-125 ${
-          coverUrl ? "" : "bg-linear-to-br from-gray-200 to-gray-400"
+          entry.coverUrl ? "" : "bg-linear-to-br from-gray-200 to-gray-400"
         }`}
         style={{
-          backgroundImage: coverUrl ? `url(${coverUrl})` : undefined,
+          backgroundImage: entry.coverUrl ? `url(${entry.coverUrl})` : undefined,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -59,9 +60,9 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
             size="sm"
             c="white"
             className="flex-1 truncate break-all"
-            title={title}
+            title={entry.title}
           >
-            {title}
+            {entry.title}
           </Text>
           <Tooltip label="Manga Details" withArrow position="bottom">
             <ActionIcon
@@ -78,18 +79,23 @@ export const ContinueReadingCard: React.FC<ContinueReadingCardProps> = ({
           </Tooltip>
         </div>
         <Text size="xs" c="white" fw={500} className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-          Chapter {lastChapter}
+          {entry.chapterNumber ? `Chapter ${entry.chapterNumber}` : "Resume"}
         </Text>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 z-1 bg-[linear-gradient(to_top,rgba(0,0,0,0.95)_0%,rgba(0,0,0,0.85)_20%,rgba(0,0,0,0.65)_40%,rgba(0,0,0,0.4)_60%,rgba(0,0,0,0.15)_80%,transparent_100%)] p-3 text-white">
         <div className="mb-2 flex items-center justify-between text-xs tracking-wide text-white uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
           <span>Progress</span>
-          <span>{progress}%</span>
+          <span>{progressLabel}</span>
         </div>
-        <Progress value={progress} size="sm" radius="xl" color="blue" />
+        <Progress
+          value={entry.progressPercent ?? 0}
+          size="sm"
+          radius="xl"
+          color="blue"
+        />
         <div className="mt-2 text-xs text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-          Updated {updatedAt}
+          Updated {relativeUpdatedAt}
         </div>
       </div>
     </Card>

@@ -1,42 +1,62 @@
-/**
- * Download Queries with WebSocket Integration
- *
- * IMPORTANT: This hook uses WebSocket for real-time updates instead of polling.
- *
- * Usage Pattern:
- * 1. Use useDownloadQueue() to get initial download queue data
- * 2. Use useWebSocket with WS_EVENTS.DOWNLOAD_PROGRESS in your component
- * 3. Invalidate query cache when WebSocket events are received
- *
- * Example:
- * ```tsx
- * const { data: queue } = useDownloadQueue();
- * const downloadProgress = useWebSocket<DownloadProgressPayload>(WS_EVENTS.DOWNLOAD_PROGRESS);
- *
- * useEffect(() => {
- *   if (downloadProgress) {
- *     queryClient.invalidateQueries({ queryKey: downloadKeys.queue });
- *   }
- * }, [downloadProgress]);
- * ```
- */
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../api/client";
-import { ENDPOINTS } from "../../constants/api";
-import type { DownloadQueueItem } from "../../types";
+import { API_PATHS } from "../../constants/api";
+import type {
+  DownloadDetailsResponse,
+  DownloadListResponse,
+  DownloadQueueItem,
+  DownloadStats,
+} from "../../types";
 
-// Query keys
-export const downloadKeys = {
-  queue: ["downloads", "queue"] as const,
+type DownloadFilters = {
+  status?: string;
+  libraryId?: string;
+  extensionId?: string;
 };
 
-// Hooks
-export const useDownloadQueue = () => {
+type QueueDownloadsPayload = {
+  libraryId: string;
+  extensionId: string;
+  chapterIds: string[];
+  chapterNumbers?: Record<string, string>;
+};
+
+export const downloadKeys = {
+  all: ["downloads"] as const,
+  list: (filters?: DownloadFilters) =>
+    ["downloads", "list", filters] as const,
+  detail: (downloadId: string) =>
+    ["downloads", "detail", downloadId] as const,
+  stats: ["downloads", "stats"] as const,
+};
+
+export const useDownloadQueue = (filters?: DownloadFilters) => {
   return useQuery({
-    queryKey: downloadKeys.queue,
-    queryFn: () => apiClient.get<DownloadQueueItem[]>(ENDPOINTS.DOWNLOADS),
-    // No refetchInterval - WebSocket provides real-time updates
+    queryKey: downloadKeys.list(filters),
+    queryFn: () =>
+      apiClient.get<DownloadListResponse>(API_PATHS.downloads, {
+        params: filters,
+      }),
+  });
+};
+
+export const useDownloadDetails = (downloadId?: string) => {
+  return useQuery({
+    queryKey: downloadId
+      ? downloadKeys.detail(downloadId)
+      : ["downloads", "detail"],
+    queryFn: () =>
+      apiClient.get<DownloadDetailsResponse>(
+        API_PATHS.downloadDetails(downloadId!),
+      ),
+    enabled: Boolean(downloadId),
+  });
+};
+
+export const useDownloadStats = () => {
+  return useQuery({
+    queryKey: downloadKeys.stats,
+    queryFn: () => apiClient.get<DownloadStats>(API_PATHS.downloadStats),
   });
 };
 
@@ -44,20 +64,13 @@ export const useStartDownload = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      mangaId,
-      chapterId,
-    }: {
-      mangaId: string;
-      chapterId: string;
-    }) =>
-      apiClient.post<DownloadQueueItem>(ENDPOINTS.DOWNLOADS, {
-        mangaId,
-        chapterId,
-      }),
+    mutationFn: (payload: QueueDownloadsPayload) =>
+      apiClient.post<{ downloads: DownloadQueueItem[] }>(
+        API_PATHS.downloads,
+        payload,
+      ),
     onSuccess: () => {
-      // Invalidate queue to show new download
-      queryClient.invalidateQueries({ queryKey: downloadKeys.queue });
+      queryClient.invalidateQueries({ queryKey: downloadKeys.all });
     },
   });
 };
@@ -66,10 +79,12 @@ export const useCancelDownload = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => apiClient.delete(ENDPOINTS.DOWNLOAD_BY_ID(id)),
+    mutationFn: (downloadId: string) =>
+      apiClient.delete<void>(API_PATHS.downloadDetails(downloadId), {
+        expectJson: false,
+      }),
     onSuccess: () => {
-      // Invalidate queue to remove cancelled download
-      queryClient.invalidateQueries({ queryKey: downloadKeys.queue });
+      queryClient.invalidateQueries({ queryKey: downloadKeys.all });
     },
   });
 };

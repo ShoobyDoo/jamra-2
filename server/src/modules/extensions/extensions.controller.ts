@@ -1,6 +1,9 @@
 import type { Request, Response } from "express";
-import { ValidationError } from "../../shared/errors.js";
-import type { ExtensionRegistry, ExtensionRuntime } from "./extensions.types.js";
+import { DomainError, ValidationError } from "../../shared/errors.js";
+import type {
+  ExtensionRegistry,
+  ExtensionRuntime,
+} from "./extensions.types.js";
 import {
   normalizeSearchFilters,
   pruneUnsupportedFilters,
@@ -15,11 +18,13 @@ import type {
   PagesResult,
   SearchPayload,
 } from "../../sdk/index.js";
+import type { InstallerService } from "../installer/installer.service.js";
 
 export class ExtensionsController {
   constructor(
     private readonly registry: ExtensionRegistry,
     private readonly runtime: ExtensionRuntime,
+    private readonly installer?: InstallerService,
   ) {}
 
   list = async (_req: Request, res: Response): Promise<void> => {
@@ -123,8 +128,71 @@ export class ExtensionsController {
     }
   };
 
-  install = async (_req: Request, res: Response): Promise<void> => {
-    res.status(501).json({ message: "Extension install not implemented." });
+  install = async (req: Request, res: Response): Promise<void> => {
+    if (!this.installer) {
+      res.status(501).json({ message: "Extension installer is not available." });
+      return;
+    }
+
+    try {
+      const { repositoryUrl, extensionIds, branch } = req.body as {
+        repositoryUrl?: string;
+        extensionIds?: string[];
+        branch?: string;
+      };
+
+      if (!repositoryUrl) {
+        res.status(400).json({ message: "repositoryUrl is required" });
+        return;
+      }
+
+      const jobIds = await this.installer.queueInstall(
+        repositoryUrl,
+        extensionIds,
+        branch,
+      );
+
+      res.status(202).json({
+        message: "Installation queued",
+        jobIds,
+        status: "queued",
+      });
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  };
+
+  getInstallStatus = async (req: Request, res: Response): Promise<void> => {
+    if (!this.installer) {
+      res.status(501).json({ message: "Extension installer is not available." });
+      return;
+    }
+
+    try {
+      const { jobId } = req.params;
+      if (!jobId) {
+        res.status(400).json({ message: "jobId is required" });
+        return;
+      }
+
+      const job = this.installer.getInstallStatus(jobId);
+      if (!job) {
+        res.status(404).json({ message: "Installation job not found" });
+        return;
+      }
+
+      res.json({
+        jobId: job.id,
+        extensionId: job.extension_id,
+        status: job.status,
+        repositoryUrl: job.repo_url,
+        requestedAt: job.requested_at,
+        completedAt: job.completed_at,
+        error: job.error,
+      });
+    } catch (error) {
+      this.handleError(res, error);
+    }
   };
 
   private async requireExtension(id: string) {
@@ -137,12 +205,12 @@ export class ExtensionsController {
   }
 
   private handleError(res: Response, error: unknown): void {
-    if (error instanceof ValidationError) {
+    if (error instanceof ValidationError || error instanceof DomainError) {
       res.status(400).json({ message: error.message });
       return;
     }
     res.status(500).json({ message: "Extension request failed." });
-  };
+  }
 }
 
 const buildAdditionalFilters = (

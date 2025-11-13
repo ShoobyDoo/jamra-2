@@ -1,74 +1,35 @@
-import { Anchor, Title } from "@mantine/core";
+import { Alert, Anchor, Text, Title } from "@mantine/core";
+import { IconAlertCircle, IconBook } from "@tabler/icons-react";
 import React from "react";
 import { useNavigate } from "react-router";
 import { ContinueReadingCard } from "../components/home/ContinueReadingCard";
-import { buildRoute } from "../routes/routes.config";
+import { useContinueReadingEntries } from "../hooks/queries/useHomeQueries";
+import type { ContinueReadingEntry } from "../types";
+import { buildRoute, ROUTES } from "../routes/routes.config";
 
 export const HomePage: React.FC = () => {
-  // Mock data for Continue Reading
-  const continueReadingData = [
-    {
-      id: "one-piece",
-      title: "One Piece",
-      coverUrl:
-        "https://temp.compsci88.com/cover/normal/01J76XY7E9FNDZ1DBBM6PBJPFK.webp",
-      lastChapter: 1095,
-      progress: 67,
-      updatedAt: "2 hours ago",
-    },
-    {
-      id: "jujutsu-kaisen",
-      title: "Jujutsu Kaisen",
-      coverUrl:
-        "https://temp.compsci88.com/cover/normal/01J76XYCERXE60T7FKXVCCAQ0H.webp",
-      lastChapter: 245,
-      progress: 23,
-      updatedAt: "Yesterday",
-    },
-    {
-      id: "my-hero-academia",
-      title: "My Hero Academia",
-      coverUrl:
-        "https://temp.compsci88.com/cover/normal/01J76XYAE4S59RVPJETN0MFRX5.webp",
-      lastChapter: 412,
-      progress: 89,
-      updatedAt: "3 days ago",
-    },
-    {
-      id: "attack-on-titan",
-      title: "Attack on Titan",
-      coverUrl:
-        "https://temp.compsci88.com/cover/normal/01J76XY7KWP8KX5RFGVZY5TR95.webp",
-      lastChapter: 139,
-      progress: 45,
-      updatedAt: "1 week ago",
-    },
-    {
-      id: "demon-slayer",
-      title: "Demon Slayer",
-      coverUrl:
-        "https://temp.compsci88.com/cover/normal/01J76XYBPP2A7D38XGF4PSQVPD.webp",
-      lastChapter: 205,
-      progress: 12,
-      updatedAt: "2 weeks ago",
-    },
-  ];
-
   const navigate = useNavigate();
+  const {
+    data: continueReadingEntries,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useContinueReadingEntries();
 
   const handleViewAllContinueReading = () => {
-    // TODO: Navigate to continue reading page or library
-    console.log("View all continue reading");
+    navigate(ROUTES.LIBRARY);
   };
 
-  const handleContinueReading = (id: string) => {
-    // TODO: Replace with reader navigation
-    console.log("Continue reading:", id);
+  const handleContinueReading = (entry: ContinueReadingEntry) => {
+    navigate(buildRoute.reader(entry.libraryId, entry.chapterId));
   };
 
-  const handleOpenMangaDetails = (id: string) => {
-    navigate(buildRoute.mangaDetails(id));
+  const handleOpenMangaDetails = (entry: ContinueReadingEntry) => {
+    navigate(buildRoute.mangaDetails(entry.extensionId, entry.mangaId));
   };
+
+  const hasEntries = (continueReadingEntries?.length ?? 0) > 0;
 
   return (
     <div className="mx-auto w-full">
@@ -85,16 +46,48 @@ export const HomePage: React.FC = () => {
           </Anchor>
         </div>
 
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(176px,192px))] justify-items-center gap-3">
-          {continueReadingData.map((item) => (
-            <ContinueReadingCard
-              key={item.id}
-              {...item}
-              onContinue={handleContinueReading}
-              onOpenDetails={handleOpenMangaDetails}
-            />
-          ))}
-        </div>
+        {isError && (
+          <Alert
+            color="red"
+            icon={<IconAlertCircle size={16} />}
+            className="mb-4"
+            withCloseButton
+            onClose={() => refetch()}
+            title="Unable to load progress"
+          >
+            {error instanceof Error ? error.message : "Unexpected error"}
+          </Alert>
+        )}
+
+        {isPending ? (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(176px,192px))] justify-items-center gap-3">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`continue-reading-skeleton-${index}`}
+                className="h-72 w-44 animate-pulse rounded-2xl bg-gray-200/50"
+              />
+            ))}
+          </div>
+        ) : hasEntries ? (
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(176px,192px))] justify-items-center gap-3">
+            {continueReadingEntries?.map((entry) => (
+              <ContinueReadingCard
+                key={entry.libraryId}
+                entry={entry}
+                onContinue={handleContinueReading}
+                onOpenDetails={handleOpenMangaDetails}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center">
+            <IconBook size={28} className="mx-auto mb-2 text-gray-400" />
+            <Title order={5}>No recent progress</Title>
+            <Text size="sm" c="dimmed">
+              Start reading any manga to see it appear here.
+            </Text>
+          </div>
+        )}
       </section>
     </div>
   );

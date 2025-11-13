@@ -69,18 +69,23 @@ export const ROUTE_HIERARCHY: Record<string, RouteConfig> = {
     parent: '/',
     breadcrumbs: ['/', '/settings'],
   },
-  '/manga/:id': {
-    path: '/manga/:id',
+  '/manga/:extensionId/:mangaId': {
+    path: '/manga/:extensionId/:mangaId',
     label: 'Manga Details',
     parent: '/discover',
     fallbackRoute: '/discover', // If someone clicks "manga" segment, go to discover
-    breadcrumbs: ['/', '/discover', '/manga/:id'],
+    breadcrumbs: ['/', '/discover', '/manga/:extensionId/:mangaId'],
   },
-  '/reader/:chapterId': {
-    path: '/reader/:chapterId',
+  '/reader/:libraryId/chapters/:chapterId': {
+    path: '/reader/:libraryId/chapters/:chapterId',
     label: 'Reader',
-    parent: '/manga/:id',
-    breadcrumbs: ['/', '/discover', '/manga/:id', '/reader/:chapterId'],
+    parent: '/manga/:extensionId/:mangaId',
+    breadcrumbs: [
+      '/',
+      '/discover',
+      '/manga/:extensionId/:mangaId',
+      '/reader/:libraryId/chapters/:chapterId',
+    ],
   },
 };
 

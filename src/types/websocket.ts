@@ -51,11 +51,29 @@ export interface DownloadCancelledPayload {
 }
 
 /**
- * Library Event Payloads (future)
+ * Library Event Payloads
  */
-export interface LibraryUpdatedPayload {
+export interface LibraryItemSnapshotPayload {
+  libraryId: string;
   mangaId: string;
-  action: "added" | "removed" | "updated";
+  extensionId: string;
+  title: string;
+  coverUrl?: string;
+  status: string;
+  favorite: boolean;
+  timestamp: number;
+}
+
+export interface LibraryItemUpdatedPayload
+  extends LibraryItemSnapshotPayload {
+  changes: Partial<Pick<LibraryItemSnapshotPayload, "status" | "favorite">>;
+}
+
+export interface LibraryItemRemovedPayload {
+  libraryId: string;
+  mangaId: string;
+  extensionId: string;
+  title: string;
   timestamp: number;
 }
 

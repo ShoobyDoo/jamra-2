@@ -1,35 +1,18 @@
 import { Router } from "express";
 import type { AppContext } from "../../app/context.js";
-import { createExtensionLoader } from "./loader/extension-loader.js";
-import { createExtensionRuntime } from "./runtime/extension-runtime.js";
-import { createExtensionRegistry } from "./registry/registry.service.js";
+import { getInstallerModule } from "../installer/installer.module.js";
 import { ExtensionsController } from "./extensions.controller.js";
-import { enableExtensionDevWatcher } from "./bootstrap/dev-watcher.js";
-import { registerLocalExtensions } from "./bootstrap/local-registry.js";
+import { getExtensionsModule } from "./extensions.module.js";
 
 export const createExtensionsRouter = (context: AppContext): Router => {
   const router = Router();
-  const registry = createExtensionRegistry(context.db);
-  const loader = createExtensionLoader({
-    target: context.config.env === "development" ? "node20" : "node18",
-  });
-  const runtime = createExtensionRuntime(loader, {
-    defaultTimeoutMs: context.config.extensions.runtime.timeoutMs,
-    httpClient: context.httpClient,
-    logger: context.logger,
-    allowNetworkHosts: context.config.sandbox.allowNetworkHosts,
-  });
-  const controller = new ExtensionsController(registry, runtime);
-
-  registerLocalExtensions(context, registry, loader).catch((error) => {
-    context.logger.error("Failed to bootstrap local extensions", {
-      error,
-    });
-  });
-
-  enableExtensionDevWatcher({ context, registry, runtime, loader });
+  const { registry, runtime } = getExtensionsModule(context);
+  const { service: installer } = getInstallerModule(context);
+  const controller = new ExtensionsController(registry, runtime, installer);
 
   router.get("/", controller.list);
+  router.post("/install", controller.install);
+  router.get("/install/:jobId", controller.getInstallStatus);
   router.get("/:extensionId/search", controller.search);
   router.get(
     "/:extensionId/manga/:mangaId/chapters/:chapterId/pages",
@@ -41,7 +24,6 @@ export const createExtensionsRouter = (context: AppContext): Router => {
   );
   router.get("/:extensionId/manga/:mangaId", controller.mangaDetails);
   router.get("/:extensionId", controller.detail);
-  router.post("/install", controller.install);
 
   return router;
 };

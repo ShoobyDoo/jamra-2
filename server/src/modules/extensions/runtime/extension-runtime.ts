@@ -12,6 +12,7 @@ import type { Logger } from "../../../shared/logger.js";
 import { ValidationError } from "../../../shared/errors.js";
 
 interface ExtensionRuntimeOptions {
+  env: "development" | "production" | "test";
   defaultTimeoutMs: number;
   httpClient: HttpClient;
   logger: Logger;
@@ -29,6 +30,7 @@ export class DefaultExtensionRuntime implements ExtensionRuntime {
   private readonly modules = new Map<string, LoadedExtension>();
   private readonly settingsStore = new Map<string, ExtensionSettingsValues>();
   private readonly allowedHosts: Set<string>;
+  private readonly isDevMode: boolean;
 
   constructor(
     private readonly loader: ExtensionLoader,
@@ -37,6 +39,7 @@ export class DefaultExtensionRuntime implements ExtensionRuntime {
     this.allowedHosts = new Set(
       options.allowNetworkHosts.map((host) => host.toLowerCase()),
     );
+    this.isDevMode = options.env === "development";
   }
 
   async initialise(record: ExtensionRecord): Promise<void> {
@@ -90,6 +93,19 @@ export class DefaultExtensionRuntime implements ExtensionRuntime {
       throw new ValidationError(`Extension ${record.slug} failed to load`);
     }
     return next;
+  }
+
+  private shouldLogLifecycleMethod(method: keyof ExtensionModule): boolean {
+    if (!this.isDevMode) {
+      return false;
+    }
+    const methodsToLog: Array<keyof ExtensionModule> = [
+      "search",
+      "getMangaDetails",
+      "getChapters",
+      "getPages",
+    ];
+    return methodsToLog.includes(method);
   }
 
   private createContext(record: ExtensionRecord): ExtensionContext {
@@ -171,10 +187,44 @@ export class DefaultExtensionRuntime implements ExtensionRuntime {
         break;
     }
 
+    // Auto-logging in dev mode
+    const shouldLog = this.shouldLogLifecycleMethod(lifecycleMethod);
+    const startTime = shouldLog ? Date.now() : 0;
+
+    if (shouldLog) {
+      const safePayload = this.summarizeForLog(payload);
+      this.options.logger.debug(
+        `Extension lifecycle: ${String(lifecycleMethod)} - start`,
+        {
+          extensionId: record.id,
+          extensionSlug: record.slug,
+          method: String(lifecycleMethod),
+          payload: safePayload,
+        },
+      );
+    }
+
     const result = (fn as (...args: unknown[]) => Promise<TResult> | TResult)(
       ...args,
     );
-    return this.withTimeout(result);
+    const finalResult = await this.withTimeout(result);
+
+    if (shouldLog) {
+      const duration = Date.now() - startTime;
+      const safeResult = this.summarizeForLog(finalResult);
+      this.options.logger.debug(
+        `Extension lifecycle: ${String(lifecycleMethod)} - complete`,
+        {
+          extensionId: record.id,
+          extensionSlug: record.slug,
+          method: String(lifecycleMethod),
+          durationMs: duration,
+          result: safeResult,
+        },
+      );
+    }
+
+    return finalResult;
   }
 
   private async withTimeout<TResult>(
@@ -201,6 +251,53 @@ export class DefaultExtensionRuntime implements ExtensionRuntime {
           reject(error);
         });
     });
+  }
+
+  private summarizeForLog(value: unknown, depth = 0): unknown {
+    if (value === null || value === undefined) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const maxLength = 200;
+      return value.length > maxLength
+        ? `${value.slice(0, maxLength)}… (+${value.length - maxLength} chars)`
+        : value;
+    }
+
+    if (typeof value !== "object") {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      const maxItems = 5;
+      const preview = value
+        .slice(0, maxItems)
+        .map((item) => this.summarizeForLog(item, depth + 1));
+      if (value.length > maxItems) {
+        preview.push(`… (+${value.length - maxItems} more)`);
+      }
+      return preview;
+    }
+
+    if (depth >= 2) {
+      return "[Object]";
+    }
+
+    const entries = Object.entries(value as Record<string, unknown>);
+    const maxEntries = 8;
+    const summarizedEntries = entries
+      .slice(0, maxEntries)
+      .reduce<Record<string, unknown>>((acc, [key, entryValue]) => {
+        acc[key] = this.summarizeForLog(entryValue, depth + 1);
+        return acc;
+      }, {});
+
+    if (entries.length > maxEntries) {
+      summarizedEntries.__truncated = `+${entries.length - maxEntries} more keys`;
+    }
+
+    return summarizedEntries;
   }
 
   private getSettings(extensionId: string): ExtensionSettingsValues {

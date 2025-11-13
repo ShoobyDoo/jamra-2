@@ -12,6 +12,7 @@ export const WS_EVENTS = {
   CONNECT: "connect",
   DISCONNECT: "disconnect",
   ERROR: "error",
+  SUBSCRIPTION_ACK: "subscription:ack",
 
   // Download events
   DOWNLOAD_STARTED: "download:started",
@@ -21,8 +22,10 @@ export const WS_EVENTS = {
   DOWNLOAD_FAILED: "download:failed",
   DOWNLOAD_CANCELLED: "download:cancelled",
 
-  // Library events (future)
-  LIBRARY_UPDATED: "library:updated",
+  // Library events
+  LIBRARY_ITEM_ADDED: "library:item:added",
+  LIBRARY_ITEM_UPDATED: "library:item:updated",
+  LIBRARY_ITEM_REMOVED: "library:item:removed",
 
   // Manga events (future)
   MANGA_UPDATED: "manga:updated",
@@ -75,11 +78,28 @@ export interface DownloadCancelledPayload {
 }
 
 /**
- * Library Event Payloads (future)
+ * Library Event Payloads
  */
-export interface LibraryUpdatedPayload {
+export interface LibraryItemSnapshotPayload {
+  libraryId: string;
   mangaId: string;
-  action: "added" | "removed" | "updated";
+  extensionId: string;
+  title: string;
+  coverUrl?: string;
+  status: string;
+  favorite: boolean;
+  timestamp: number;
+}
+
+export interface LibraryItemUpdatedPayload extends LibraryItemSnapshotPayload {
+  changes: Partial<Pick<LibraryItemSnapshotPayload, "status" | "favorite">>;
+}
+
+export interface LibraryItemRemovedPayload {
+  libraryId: string;
+  mangaId: string;
+  extensionId: string;
+  title: string;
   timestamp: number;
 }
 

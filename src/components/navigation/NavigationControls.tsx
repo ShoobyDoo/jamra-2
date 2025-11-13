@@ -10,16 +10,11 @@ import { useNavigate } from 'react-router';
 export const NavigationControls: React.FC = () => {
   const navigate = useNavigate();
   const [canGoBack, setCanGoBack] = React.useState(false);
-  const [canGoForward, setCanGoForward] = React.useState(false);
 
   // Check navigation history on mount and after navigation
   React.useEffect(() => {
     // Check if we can go back (history length > 1)
     setCanGoBack(window.history.length > 1);
-
-    // We can't reliably detect forward history in browser API
-    // So we'll keep forward button always enabled and let browser handle it
-    setCanGoForward(false);
   }, []);
 
   const handleBack = () => {

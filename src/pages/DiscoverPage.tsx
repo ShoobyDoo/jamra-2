@@ -1,129 +1,306 @@
 import {
-  Badge,
+  Alert,
   Button,
+  Divider,
+  Group,
+  Loader,
+  MultiSelect,
   Paper,
+  Select,
+  SegmentedControl,
+  SimpleGrid,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
-import { IconFlame, IconSearch } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconFlame,
+  IconSearch,
+} from "@tabler/icons-react";
 import React, { useState } from "react";
+import { ExtensionSearchResults } from "../components/discover/ExtensionSearchResults";
+import { UnifiedMangaCard } from "../components/shared/UnifiedMangaCard";
+import {
+  useExtensionSearch,
+  useExtensionsList,
+} from "../hooks/queries/useExtensionsQueries";
 
-const trendingManga = [
-  {
-    id: "one-piece",
-    title: "One Piece",
-    source: "WeebCentral",
-    tags: ["Adventure", "Shounen", "Weekly"],
-  },
-  {
-    id: "jjk",
-    title: "Jujutsu Kaisen",
-    source: "MangaDex",
-    tags: ["Action", "Dark Fantasy"],
-  },
-  {
-    id: "solo-leveling",
-    title: "Solo Leveling",
-    source: "Batoto",
-    tags: ["Manhwa", "Trending"],
-  },
-  {
-    id: "dandadan",
-    title: "Dandadan",
-    source: "WeebCentral",
-    tags: ["Sci-Fi", "Comedy"],
-  },
-  {
-    id: "berserk",
-    title: "Berserk",
-    source: "ComicK",
-    tags: ["Seinen", "Classic"],
-  },
-  {
-    id: "frieren",
-    title: "Frieren: Beyond Journey's End",
-    source: "MangaDex",
-    tags: ["Fantasy", "Drama"],
-  },
-];
+type SearchMode = "single" | "all";
 
 export const DiscoverPage: React.FC = () => {
   const [query, setQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<SearchMode>("all");
+  const [selectedExtension, setSelectedExtension] = useState<string | null>(
+    null,
+  );
+  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<string>("relevance");
+
+  const { data: extensionsData, isLoading: isLoadingExtensions } =
+    useExtensionsList();
+  const loadPopular = Boolean(extensionsData?.extensions?.length);
+
+  // Single extension search
+  const { data: singleSearchResults, isLoading: isSingleSearching } =
+    useExtensionSearch(
+      searchMode === "single" && selectedExtension
+        ? selectedExtension
+        : undefined,
+      searchMode === "single" && searchQuery ? { query: searchQuery } : undefined,
+    );
+
+  // Multi-extension concurrent searches
+  const allExtensionsToSearch =
+    searchMode === "all"
+      ? selectedExtensions.length > 0
+        ? selectedExtensions
+        : extensionsData?.extensions.map((e) => e.id) || []
+      : [];
+
+  // Get extension details for rendering
+  const extensionsToRender =
+    searchMode === "all" && searchQuery
+      ? allExtensionsToSearch.map((extId) => ({
+          id: extId,
+          name:
+            extensionsData?.extensions.find((e) => e.id === extId)?.name ||
+            extId,
+        }))
+      : [];
+
+  // Popular extensions
+  const popularExtensions = loadPopular
+    ? extensionsData?.extensions || []
+    : [];
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: Wire up actual search + extension selection
-    console.log("Search query:", query);
+
+    if (!query.trim()) {
+      return;
+    }
+
+    if (searchMode === "single" && !selectedExtension) {
+      return;
+    }
+
+    setSearchQuery(query);
   };
 
+  const extensionOptions =
+    extensionsData?.extensions.map((ext) => ({
+      value: ext.id,
+      label: ext.name,
+    })) || [];
+
+  const hasSearched = Boolean(searchQuery);
+
   return (
-    <div className="mx-auto w-full max-w-6xl px-4">
-      <section className="mb-12 text-center">
+    <div className="mx-auto w-full max-w-7xl px-4 py-6">
+      {/* Header */}
+      <section className="mb-8 text-center">
         <Title order={1} className="mb-3">
           Discover
         </Title>
         <Text className="mx-auto mb-6 max-w-2xl text-gray-600">
-          Search across your installed extensions or dive into what readers are
-          loving right now.
+          Search across your installed extensions to find manga, or explore
+          what's popular right now.
         </Text>
-        <form onSubmit={handleSubmit} className="mx-auto max-w-3xl">
-          <Paper
-            shadow="sm"
-            radius="xl"
-            className="flex flex-col gap-3 border border-gray-200 p-4 sm:flex-row"
+
+        {isLoadingExtensions ? (
+          <div className="flex justify-center py-8">
+            <Loader size="md" />
+          </div>
+        ) : extensionOptions.length === 0 ? (
+          <Alert
+            icon={<IconAlertCircle size={18} />}
+            title="No Extensions Installed"
+            color="yellow"
+            className="mx-auto max-w-3xl"
           >
-            <TextInput
-              value={query}
-              onChange={(event) => setQuery(event.currentTarget.value)}
-              placeholder="Search title, author, or extension"
-              radius="xl"
-              size="md"
-              leftSection={<IconSearch size={18} />}
-              className="flex-1"
-            />
-            <Button
-              type="submit"
-              radius="xl"
-              size="md"
-              className="w-full sm:w-auto"
-            >
-              Search
-            </Button>
-          </Paper>
-        </form>
+            You need to install extensions before you can search for manga.
+            Visit the Extensions page to install one.
+          </Alert>
+        ) : (
+          <form onSubmit={handleSubmit} className="mx-auto max-w-4xl">
+            <Paper shadow="sm" radius="lg" className="border border-gray-200 p-4">
+              {/* Search Mode Selector */}
+              <SegmentedControl
+                value={searchMode}
+                onChange={(value) => setSearchMode(value as SearchMode)}
+                data={[
+                  { label: "Search All", value: "all" },
+                  { label: "Single Extension", value: "single" },
+                ]}
+                fullWidth
+                className="mb-4"
+              />
+
+              {/* Extension Selection */}
+              {searchMode === "single" ? (
+                <Select
+                  value={selectedExtension}
+                  onChange={setSelectedExtension}
+                  data={extensionOptions}
+                  placeholder="Select an extension"
+                  searchable
+                  clearable
+                  size="md"
+                  className="mb-3 w-full"
+                  aria-label="Select extension"
+                />
+              ) : (
+                <MultiSelect
+                  value={selectedExtensions}
+                  onChange={setSelectedExtensions}
+                  data={extensionOptions}
+                  placeholder="Select extensions (leave empty for all)"
+                  searchable
+                  clearable
+                  size="md"
+                  className="mb-3 w-full"
+                  aria-label="Select extensions"
+                />
+              )}
+
+              {/* Search Input + Filters */}
+              <Group gap="md" className="mb-3">
+                <TextInput
+                  value={query}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  placeholder="Search title or author"
+                  radius="md"
+                  size="md"
+                  leftSection={<IconSearch size={18} />}
+                  className="flex-1"
+                />
+                <Select
+                  value={sortBy}
+                  onChange={(value) => setSortBy(value || "relevance")}
+                  data={[
+                    { value: "relevance", label: "Relevance" },
+                    { value: "latest", label: "Latest" },
+                    { value: "popular", label: "Popular" },
+                    { value: "alphabetical", label: "A-Z" },
+                  ]}
+                  placeholder="Sort by"
+                  size="md"
+                  className="w-40"
+                  aria-label="Sort by"
+                />
+              </Group>
+
+              <Button
+                type="submit"
+                radius="md"
+                size="md"
+                fullWidth
+                disabled={
+                  !query.trim() ||
+                  (searchMode === "single" && !selectedExtension)
+                }
+                loading={searchMode === "single" && isSingleSearching}
+                leftSection={<IconSearch size={18} />}
+              >
+                Search
+              </Button>
+            </Paper>
+          </form>
+        )}
       </section>
 
-      <section>
-        <div className="mb-5 flex items-center gap-2">
-          <IconFlame size={20} className="text-orange-500" />
-          <Title order={3}>Hot & Trending</Title>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {trendingManga.map((manga) => (
-            <Paper
-              key={manga.id}
-              withBorder
-              radius="lg"
-              className="flex h-full flex-col gap-3 p-4"
-            >
+      {/* Search Results */}
+      {hasSearched && (
+        <>
+          <Divider my="xl" />
+          <section>
+            <Title order={2} className="mb-6">
+              <IconSearch size={24} className="mb-1 inline" /> Search Results
+            </Title>
+
+            {searchMode === "single" ? (
+              // Single extension results
               <div>
-                <Text fw={600}>{manga.title}</Text>
-                <Text size="xs" c="dimmed">
-                  Source: {manga.source}
+                <Text size="sm" c="dimmed" className="mb-4">
+                  Searching in:{" "}
+                  {
+                    extensionsData?.extensions.find(
+                      (e) => e.id === selectedExtension,
+                    )?.name
+                  }{" "}
+                  ({singleSearchResults?.results.length || 0} results)
                 </Text>
+                {isSingleSearching ? (
+                  <div className="flex justify-center py-12">
+                    <Loader size="lg" />
+                  </div>
+                ) : singleSearchResults && singleSearchResults.results.length > 0 ? (
+                  <SimpleGrid
+                    cols={{ base: 2, xs: 3, sm: 4, md: 5, lg: 6 }}
+                    spacing="lg"
+                  >
+                    {singleSearchResults.results.map((manga) => (
+                      <UnifiedMangaCard
+                        key={manga.id}
+                        id={manga.id}
+                        extensionId={selectedExtension!}
+                        title={manga.title}
+                        coverUrl={manga.coverUrl}
+                        status={manga.status}
+                      />
+                    ))}
+                  </SimpleGrid>
+                ) : (
+                  <Text className="py-8 text-center text-gray-600">
+                    No results found for "{searchQuery}"
+                  </Text>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {manga.tags.map((tag) => (
-                  <Badge key={tag} size="xs" radius="sm" variant="light">
-                    {tag}
-                  </Badge>
+            ) : (
+              // Multi-extension grouped results
+              <div className="space-y-8">
+                {extensionsToRender.map((ext) => (
+                  <ExtensionSearchResults
+                    key={ext.id}
+                    extensionId={ext.id}
+                    extensionName={ext.name}
+                    searchQuery={searchQuery}
+                    showHeader={true}
+                  />
                 ))}
               </div>
-            </Paper>
-          ))}
-        </div>
-      </section>
+            )}
+          </section>
+        </>
+      )}
+
+      {/* Popular/Hot Section (shows when not searching) */}
+      {!hasSearched && loadPopular && popularExtensions.length > 0 && (
+        <>
+          <Divider my="xl" />
+          <section>
+            <div className="mb-6 flex items-center gap-2">
+              <IconFlame size={24} className="text-orange-500" />
+              <Title order={2}>Popular & Trending</Title>
+            </div>
+
+            <div className="space-y-8">
+              {popularExtensions.map((ext) => (
+                <ExtensionSearchResults
+                  key={ext.id}
+                  extensionId={ext.id}
+                  extensionName={ext.name}
+                  searchQuery=""
+                  limit={6}
+                  showHeader={true}
+                />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 };

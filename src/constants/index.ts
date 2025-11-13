@@ -4,7 +4,7 @@
  */
 
 // API constants
-export { API_BASE_URL, ENDPOINTS } from "./api";
+export { API_BASE_URL, API_PATHS } from "./api";
 
 // Query constants
 export {
@@ -39,3 +39,17 @@ export {
   SEARCH_DEBOUNCE_MS,
   TOAST_DURATION,
 } from "./ui";
+
+// Settings constants
+export {
+  DEFAULT_SETTINGS,
+  DOWNLOAD_QUALITY_OPTIONS,
+  PAGE_FIT_OPTIONS,
+  PAGE_TURN_MODE_OPTIONS,
+  READING_DIRECTION_OPTIONS,
+  SETTING_KEYS,
+  SETTING_SCOPES,
+  THEME_OPTIONS,
+  getDefaultSettingValue,
+  getScopeFromKey,
+} from "./settings";

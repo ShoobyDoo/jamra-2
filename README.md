@@ -59,7 +59,6 @@ JAMRA/
 │   │   │   └── settings/  # Server/client configuration
 │   │   ├── sdk/           # Extension SDK for developers
 │   │   ├── shared/        # Cross-cutting utilities (HTTP, logger)
-│   │   ├── services/      # Legacy service stubs (not used)
 │   │   ├── types/         # Legacy TypeScript types
 │   │   └── websocket/     # WebSocket handlers for real-time updates
 │   └── tsconfig.json
@@ -184,10 +183,9 @@ Electron Builder is configured in `electron-builder.yml` and includes:
 
 ### TanStack Query (Server State)
 
-- **useMangaQueries** - Manga CRUD operations
-- **useChapterQueries** - Chapter queries
-- **useLibraryQueries** - Library & reading progress
-- **useDownloadQueries** - Download queue management
+- **useLibraryQueries** – Library list/detail, stats, and reading progress sync
+- **useDownloadQueries** – Download queue, stats, and queue/cancel mutations
+- **useExtensionsQueries** – Extension registry, search, manga, chapters, and page descriptors
 
 ## API Endpoints
 

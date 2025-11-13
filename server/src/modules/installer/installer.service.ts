@@ -20,6 +20,30 @@ type InstallStatus =
   | "completed"
   | "failed";
 
+interface ExtensionInstallRow {
+  id: string;
+  extension_id: string;
+  status: InstallStatus;
+  repo_url: string | null;
+  extension_metadata: string;
+  requested_at: number;
+  completed_at: number | null;
+  error: string | null;
+}
+
+interface ExtensionRow {
+  id: string;
+  slug: string;
+  name: string;
+  version: string;
+  repo_source: string | null;
+  install_path: string;
+  manifest_json: string;
+  enabled: number;
+  installed_at: number;
+  checksum: string | null;
+}
+
 /**
  * Service for managing extension installations
  */
@@ -106,7 +130,7 @@ export class InstallerService {
       WHERE status = 'pending'
       ORDER BY requested_at ASC
     `);
-    const pending = stmt.all() as any[];
+    const pending = stmt.all() as ExtensionInstallRow[];
 
     if (pending.length === 0) {
       this.logger.info("No pending installations");
@@ -134,13 +158,16 @@ export class InstallerService {
   /**
    * Process a single installation job
    */
-  private async processInstall(install: any): Promise<void> {
+  private async processInstall(install: ExtensionInstallRow): Promise<void> {
     const { id: jobId, extension_id, extension_metadata } = install;
 
     this.logger.info(`Processing installation job ${jobId} for extension: ${extension_id}`);
 
     try {
       // Parse extension metadata
+      if (!extension_metadata) {
+        throw new DomainError("Installation job is missing extension metadata");
+      }
       const metadata: ExtensionMetadata = JSON.parse(extension_metadata);
 
       // Update status: downloading
@@ -252,7 +279,7 @@ export class InstallerService {
       const stmt = this.db.prepare(`
         SELECT * FROM extensions WHERE id = ?
       `);
-      const record = stmt.get(extensionId) as any;
+      const record = stmt.get(extensionId) as ExtensionRow | undefined;
 
       if (!record) {
         throw new DomainError(`Extension not found in database: ${extensionId}`);
@@ -267,11 +294,11 @@ export class InstallerService {
         slug: record.slug,
         name: record.name,
         version: record.version,
-        repoSource: record.repo_source,
+        repoSource: record.repo_source ?? undefined,
         installedAt: new Date(record.installed_at),
         enabled: record.enabled === 1,
         installPath: record.install_path,
-        checksum: record.checksum,
+        checksum: record.checksum ?? undefined,
         manifest,
       };
 
@@ -290,11 +317,11 @@ export class InstallerService {
   /**
    * Get installation status by job ID
    */
-  getInstallStatus(jobId: string): any {
+  getInstallStatus(jobId: string): ExtensionInstallRow | undefined {
     const stmt = this.db.prepare(`
       SELECT * FROM extension_installs WHERE id = ?
     `);
-    return stmt.get(jobId);
+    return stmt.get(jobId) as ExtensionInstallRow | undefined;
   }
 }
 

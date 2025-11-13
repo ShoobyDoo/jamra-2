@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import type { Message } from "esbuild";
 import path from "node:path";
 import { DomainError } from "../../../shared/errors.js";
 
@@ -26,7 +27,7 @@ export class ExtensionCompiler {
   async compile(
     sourceCode: string,
     entrypoint: string,
-    extensionId: string,
+    _extensionId: string,
   ): Promise<CompilationResult> {
     try {
       // Determine loader based on file extension
@@ -146,7 +147,7 @@ export class ExtensionCompiler {
   /**
    * Format esbuild error/warning message
    */
-  private formatError(message: any): string {
+  private formatError(message: Message): string {
     const location = message.location
       ? `${message.location.file}:${message.location.line}:${message.location.column}`
       : "";

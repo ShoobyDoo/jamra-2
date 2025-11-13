@@ -171,6 +171,28 @@ class WebSocketClient {
   }
 
   /**
+   * Subscribe to download-specific events
+   */
+  subscribeToDownload(downloadId: string): void {
+    if (!downloadId) {
+      console.warn("downloadId is required to subscribe");
+      return;
+    }
+    this.send("subscribe:download", { downloadId });
+  }
+
+  /**
+   * Unsubscribe from download-specific events
+   */
+  unsubscribeFromDownload(downloadId: string): void {
+    if (!downloadId) {
+      console.warn("downloadId is required to unsubscribe");
+      return;
+    }
+    this.send("unsubscribe:download", { downloadId });
+  }
+
+  /**
    * Get connection status
    */
   isConnected(): boolean {

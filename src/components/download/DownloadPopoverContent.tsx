@@ -18,7 +18,7 @@ export const DownloadPopoverContent: React.FC<DownloadPopoverContentProps> = ({
   const { mutate: cancelDownload } = useCancelDownload();
 
   const activeDownloads = downloads.filter(
-    (d) => d.status === "pending" || d.status === "downloading",
+    (d) => d.status === "queued" || d.status === "downloading",
   );
 
   const handleCancel = (downloadId: string) => {
@@ -27,7 +27,7 @@ export const DownloadPopoverContent: React.FC<DownloadPopoverContentProps> = ({
 
   const getStatusText = (status: DownloadQueueItem["status"]): string => {
     switch (status) {
-      case "pending":
+      case "queued":
         return "Waiting...";
       case "downloading":
         return "Downloading...";
@@ -87,7 +87,7 @@ export const DownloadPopoverContent: React.FC<DownloadPopoverContentProps> = ({
                       {getStatusText(download.status)}
                     </Text>
                   </div>
-                  {(download.status === "pending" ||
+                  {(download.status === "queued" ||
                     download.status === "downloading") && (
                     <ActionIcon
                       size="xs"

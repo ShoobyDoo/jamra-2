@@ -22,7 +22,7 @@ export const NavButton: React.FC<INavLink> = ({ to, label, icon: NavIcon }) => {
       aria-label={label}
     >
       <NavIcon size={24} stroke={1.5} />
-      <span className="text-center text-[10px] leading-none font-medium tracking-wide">
+      <span className="text-center text-[11px] leading-none font-medium tracking-wide">
         {label}
       </span>
     </NavLink>

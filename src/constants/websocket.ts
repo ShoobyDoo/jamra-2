@@ -25,6 +25,7 @@ export const WS_EVENTS = {
   CONNECT: "connect",
   DISCONNECT: "disconnect",
   ERROR: "error",
+  SUBSCRIPTION_ACK: "subscription:ack",
 
   // Download events
   DOWNLOAD_STARTED: "download:started",
@@ -34,8 +35,10 @@ export const WS_EVENTS = {
   DOWNLOAD_FAILED: "download:failed",
   DOWNLOAD_CANCELLED: "download:cancelled",
 
-  // Library events (future)
-  LIBRARY_UPDATED: "library:updated",
+  // Library events
+  LIBRARY_ITEM_ADDED: "library:item:added",
+  LIBRARY_ITEM_UPDATED: "library:item:updated",
+  LIBRARY_ITEM_REMOVED: "library:item:removed",
 
   // Manga events (future - for multi-client sync)
   MANGA_UPDATED: "manga:updated",

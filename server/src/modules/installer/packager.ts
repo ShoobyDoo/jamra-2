@@ -29,7 +29,7 @@ export class FileExtensionPackager implements ExtensionPackager {
     compiledCode: string,
     metadata: ExtensionMetadata,
   ): Promise<string> {
-    const { id, version } = metadata;
+    const { id } = metadata;
 
     // 1. Create directory structure: extensions/{extensionId}/
     const installPath = path.join(this.extensionsDir, id);

@@ -4,6 +4,7 @@ import { LAYOUT } from "../../constants/ui";
 import { SearchBar } from "../ui/SearchBar";
 import { NavigationControls } from "../navigation/NavigationControls";
 import { Breadcrumbs } from "../navigation/Breadcrumbs";
+import { WebSocketStatus } from "../ui/WebSocketStatus";
 
 export const Header: React.FC = () => {
   return (
@@ -27,6 +28,7 @@ export const Header: React.FC = () => {
       <div className="flex flex-1 items-center justify-between px-3 gap-3">
         <Breadcrumbs />
         <div className="flex items-center gap-3">
+          <WebSocketStatus />
           <NavigationControls />
           <SearchBar />
         </div>
