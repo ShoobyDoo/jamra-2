@@ -50,7 +50,7 @@ export const useContinueReadingEntries = () => {
                   100,
                   Math.round((progress.pageNumber / totalPages) * 100),
                 )
-              : undefined;
+              : 0;
 
           const entry: ContinueReadingEntry = {
             libraryId: item.id,

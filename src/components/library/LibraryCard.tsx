@@ -1,20 +1,20 @@
-import React from "react";
 import { ActionIcon, Badge, Select, Text } from "@mantine/core";
 import { IconHeart, IconHeartFilled } from "@tabler/icons-react";
-import type { LibraryItem, LibraryStatus } from "../../types";
-import {
-  useToggleFavorite,
-  useUpdateLibraryItem,
-} from "../../hooks/queries/useLibraryQueries";
-import { formatRelativeTime } from "../../lib/date";
+import React from "react";
+import { useNavigate } from "react-router";
 import {
   formatLibraryStatus,
   LIBRARY_STATUS_COLORS,
   LIBRARY_STATUS_LABELS,
 } from "../../constants/library";
-import { useNavigate } from "react-router";
-import { UnifiedMangaCard } from "../shared/UnifiedMangaCard";
+import {
+  useToggleFavorite,
+  useUpdateLibraryItem,
+} from "../../hooks/queries/useLibraryQueries";
+import { formatRelativeTime } from "../../lib/date";
 import { buildRoute } from "../../routes/routes.config";
+import type { LibraryItem, LibraryStatus } from "../../types";
+import { UnifiedMangaCard } from "../shared/UnifiedMangaCard";
 
 interface LibraryCardProps {
   item: LibraryItem;
@@ -25,11 +25,9 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ item }) => {
   const toggleFavorite = useToggleFavorite(item.id);
   const updateLibraryItem = useUpdateLibraryItem(item.id);
 
-  const handleFavoriteClick = (
-    event: React.MouseEvent<HTMLButtonElement>,
-  ) => {
+  const handleFavoriteClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    toggleFavorite.mutate();
+    toggleFavorite.mutate({ favorite: !item.favorite });
   };
 
   const handleStatusChange = (value: string | null) => {
@@ -83,10 +81,16 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ item }) => {
         onClick={handleFavoriteClick}
         onMouseDown={stopPropagation}
         onTouchStart={stopPropagation}
-        aria-label={item.favorite ? "Remove from favorites" : "Add to favorites"}
+        aria-label={
+          item.favorite ? "Remove from favorites" : "Add to favorites"
+        }
         className="shadow-md"
       >
-        {item.favorite ? <IconHeartFilled size={16} /> : <IconHeart size={16} />}
+        {item.favorite ? (
+          <IconHeartFilled size={16} />
+        ) : (
+          <IconHeart size={16} />
+        )}
       </ActionIcon>
     </div>
   );
@@ -98,7 +102,7 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ item }) => {
           size="xs"
           variant="light"
           color="dark"
-          className="bg-white/10 text-[10px] uppercase tracking-wide"
+          className="bg-white/10 text-[10px] tracking-wide uppercase"
         >
           {item.extensionId}
         </Badge>

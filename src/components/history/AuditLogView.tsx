@@ -1,32 +1,38 @@
-import React, { useMemo } from "react";
 import {
-  Stack,
-  Group,
-  Text,
-  Timeline,
-  Badge,
-  Loader,
   Alert,
+  Badge,
   Card,
+  Group,
+  Loader,
+  Stack,
+  Text,
   ThemeIcon,
+  Timeline,
 } from "@mantine/core";
 import {
+  IconAlertCircle,
   IconBook,
   IconBookmark,
-  IconDownload,
-  IconAlertCircle,
-  IconSettings,
-  IconPuzzle,
   IconClock,
+  IconDownload,
+  IconPuzzle,
+  IconSettings,
 } from "@tabler/icons-react";
-import { useLibraryList } from "../../hooks/queries/useLibraryQueries";
+import React, { useMemo } from "react";
 import { useDownloadQueue } from "../../hooks/queries/useDownloadQueries";
+import { useLibraryList } from "../../hooks/queries/useLibraryQueries";
 import { useReadingActivity } from "../../hooks/queries/useReadingActivityQueries";
 import { formatRelativeTime } from "../../lib/date";
 
 type AuditEvent = {
   id: string;
-  type: "library_added" | "library_updated" | "reading" | "download" | "settings" | "extension";
+  type:
+    | "library_added"
+    | "library_updated"
+    | "reading"
+    | "download"
+    | "settings"
+    | "extension";
   timestamp: string;
   title: string;
   description: string;
@@ -102,7 +108,7 @@ export const AuditLogView: React.FC = () => {
           type: "download",
           timestamp: download.createdAt,
           title: `Download ${download.status}`,
-          description: `${download.chapterIds.length} chapter(s)`,
+          description: `${downloadData.downloads.length} chapter(s)`,
           metadata: {
             status: download.status,
             progress: download.progress,
@@ -214,7 +220,7 @@ export const AuditLogView: React.FC = () => {
                 <Text size="sm" fw={600}>
                   {event.title}
                 </Text>
-                <Text size="xs" c="dimmed" className="flex-shrink-0">
+                <Text size="xs" c="dimmed" className="shrink-0">
                   {formatRelativeTime(event.timestamp)}
                 </Text>
               </Group>
@@ -243,9 +249,9 @@ export const AuditLogView: React.FC = () => {
         color="blue"
         variant="light"
       >
-        This audit log aggregates events from multiple sources. A dedicated backend endpoint
-        for comprehensive activity tracking (settings updates, extension installs, etc.) is
-        planned for future releases.
+        This audit log aggregates events from multiple sources. A dedicated
+        backend endpoint for comprehensive activity tracking (settings updates,
+        extension installs, etc.) is planned for future releases.
       </Alert>
     </Stack>
   );

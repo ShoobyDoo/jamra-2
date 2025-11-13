@@ -1,4 +1,11 @@
-import { ActionIcon, Badge, Card, Progress, Text, Tooltip } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Card,
+  Progress,
+  Text,
+  Tooltip,
+} from "@mantine/core";
 import { IconBook } from "@tabler/icons-react";
 import React, { type ReactNode } from "react";
 import { useNavigate } from "react-router";
@@ -176,7 +183,7 @@ export const UnifiedMangaCard: React.FC<UnifiedMangaCardProps> = ({
                 <span>{progressPercent}%</span>
               </div>
               <Progress
-                value={progressPercent}
+                value={progressPercent ?? 0}
                 size="sm"
                 radius="xl"
                 color="blue"

@@ -1,10 +1,31 @@
-import { Alert, Badge, Button, Card, Group, Loader, Modal, Progress, Stack, Text, TextInput, Title } from "@mantine/core";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Loader,
+  Modal,
+  Progress,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconAlertCircle, IconCheck, IconDownload, IconX } from "@tabler/icons-react";
+import {
+  IconAlertCircle,
+  IconCheck,
+  IconDownload,
+  IconX,
+} from "@tabler/icons-react";
 import React, { useEffect, useState } from "react";
-import { useInstallExtension, useInstallerJob } from "../../hooks/queries/useInstallerQueries";
+import {
+  useInstallExtension,
+  useInstallerJob,
+} from "../../hooks/queries/useInstallerQueries";
 import type { InstallJob } from "../../types";
 
 interface InstallerFormValues {
@@ -51,7 +72,7 @@ const getStatusProgress = (status: InstallJob["status"]) => {
 export const InstallerForm: React.FC = () => {
   const [opened, { open, close }] = useDisclosure(false);
   const [activeJobs, setActiveJobs] = useState<InstallJob[]>([]);
-  const [pollingJobIds, setPollingJobIds] = useState<string[]>([]);
+  const [_, setPollingJobIds] = useState<string[]>([]);
 
   const installMutation = useInstallExtension();
 
@@ -89,7 +110,7 @@ export const InstallerForm: React.FC = () => {
 
           // Track all jobs
           setActiveJobs(data.jobs);
-          setPollingJobIds(data.jobs.map(job => job.jobId));
+          setPollingJobIds(data.jobs.map((job) => job.jobId));
 
           // Close form and open progress modal
           form.reset();
@@ -98,7 +119,10 @@ export const InstallerForm: React.FC = () => {
         onError: (error) => {
           notifications.show({
             title: "Installation Failed",
-            message: error instanceof Error ? error.message : "Failed to start installation",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Failed to start installation",
             color: "red",
           });
         },
@@ -132,7 +156,9 @@ export const InstallerForm: React.FC = () => {
                   jobId={job.jobId}
                   onComplete={(completedJob) => {
                     setActiveJobs((prev) =>
-                      prev.map((j) => (j.jobId === completedJob.jobId ? completedJob : j))
+                      prev.map((j) =>
+                        j.jobId === completedJob.jobId ? completedJob : j,
+                      ),
                     );
                   }}
                 />
@@ -174,8 +200,9 @@ export const InstallerForm: React.FC = () => {
             />
 
             <Alert color="blue">
-              The installer will fetch the repository's index.json, validate the extensions, and
-              compile them if needed. Check the progress above after submitting.
+              The installer will fetch the repository's index.json, validate the
+              extensions, and compile them if needed. Check the progress above
+              after submitting.
             </Alert>
 
             <Group justify="flex-end">
@@ -198,29 +225,42 @@ const JobProgressCard: React.FC<{
   jobId: string;
   onComplete: (job: InstallJob) => void;
 }> = ({ jobId, onComplete }) => {
-  const { data: job, isLoading } = useInstallerJob(jobId, { refetchInterval: 1000 });
+  const { data: job, isLoading } = useInstallerJob(jobId, {
+    refetchInterval: 1000,
+  });
   const [notifiedCompletion, setNotifiedCompletion] = useState(false);
 
   useEffect(() => {
-    if (job && (job.status === "completed" || job.status === "failed") && !notifiedCompletion) {
-      setNotifiedCompletion(true);
-      onComplete(job);
+    if (
+      job &&
+      (job.status === "completed" || job.status === "failed") &&
+      !notifiedCompletion
+    ) {
+      // Defer state updates and callbacks to the next tick to avoid synchronous setState within the effect
+      const timer = window.setTimeout(() => {
+        setNotifiedCompletion(true); // TODO: REVISE THIS. STATE UPDATE WITHIN A useEffect() HOOK IS NOT GOOD PRACTICE AND FROWNED UPON BY REACT.
+        onComplete(job);
 
-      if (job.status === "completed") {
-        notifications.show({
-          title: "Installation Complete",
-          message: `Extension ${job.extensionId} installed successfully`,
-          color: "green",
-          icon: <IconCheck size={16} />,
-        });
-      } else {
-        notifications.show({
-          title: "Installation Failed",
-          message: `Extension ${job.extensionId} failed: ${job.error || "Unknown error"}`,
-          color: "red",
-          icon: <IconX size={16} />,
-        });
-      }
+        if (job.status === "completed") {
+          notifications.show({
+            title: "Installation Complete",
+            message: `Extension ${job.extensionId} installed successfully`,
+            color: "green",
+            icon: <IconCheck size={16} />,
+          });
+        } else {
+          notifications.show({
+            title: "Installation Failed",
+            message: `Extension ${job.extensionId} failed: ${job.error || "Unknown error"}`,
+            color: "red",
+            icon: <IconX size={16} />,
+          });
+        }
+      }, 0);
+
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [job, notifiedCompletion, onComplete]);
 
@@ -235,7 +275,12 @@ const JobProgressCard: React.FC<{
     );
   }
 
-  const isInProgress = ["pending", "downloading", "compiling", "installing"].includes(job.status);
+  const isInProgress = [
+    "pending",
+    "downloading",
+    "compiling",
+    "installing",
+  ].includes(job.status);
   const progress = getStatusProgress(job.status);
   const color = getStatusColor(job.status);
 
