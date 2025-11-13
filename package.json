@@ -78,7 +78,7 @@
     "@vitest/coverage-v8": "4.0.8",
     "@vitest/ui": "^4.0.8",
     "concurrently": "^9.2.1",
-    "electron": "^38.6.0",
+    "electron": "^39.1.2",
     "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
