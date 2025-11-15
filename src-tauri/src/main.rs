@@ -1,10 +1,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
+use std::io::Write;
+use std::net::{IpAddr, Ipv4Addr, Shutdown, SocketAddr, TcpStream};
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, RunEvent, State, Wry};
@@ -48,6 +50,11 @@ fn logging_targets() -> Vec<Target> {
 const LOG_FILE_NAME: &str = "main";
 const MAX_LOG_FILE_BYTES: u128 = 10 * 1024 * 1024; // 10 MB per file
 const SERVER_LOG_FILE: &str = "server";
+const SERVER_HOST: &str = "127.0.0.1";
+const SERVER_PORT: u16 = 3000;
+const SERVER_PORT_STR: &str = "3000";
+const SERVER_BASE_URL: &str = "http://127.0.0.1:3000";
+const SHUTDOWN_PATH: &str = "/api/system/shutdown";
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
@@ -196,9 +203,9 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     let mut cmd = Command::new("node");
     cmd.arg(server_entry_normalized)
         .current_dir(server_bundle_dir_normalized)
-        .env("PORT", "3000")
-        .env("SERVER_HOST", "127.0.0.1")
-        .env("SERVER_BASE_URL", "http://127.0.0.1:3000")
+        .env("PORT", SERVER_PORT_STR)
+        .env("SERVER_HOST", SERVER_HOST)
+        .env("SERVER_BASE_URL", SERVER_BASE_URL)
         .env("ELECTRON_PACKAGED", "true")
         .env("RESOURCES_PATH", resource_dir_normalized)
         .env("JAMRA_LOG_DIR", log_dir_env)
@@ -207,6 +214,7 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
             "JAMRA_LOG_LEVEL",
             if cfg!(debug_assertions) { "debug" } else { "info" },
         )
+        .env("JAMRA_ALLOW_SHUTDOWN", "true")
         .env("NODE_ENV", "production")
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
@@ -245,39 +253,101 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
+fn request_graceful_shutdown() -> bool {
+    let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), SERVER_PORT);
+    match TcpStream::connect_timeout(&addr, Duration::from_millis(300)) {
+        Ok(mut stream) => {
+            let request = format!(
+                "POST {path} HTTP/1.1\r\nHost: {host}:{port}\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+                path = SHUTDOWN_PATH,
+                host = SERVER_HOST,
+                port = SERVER_PORT
+            );
+            if let Err(err) = stream.write_all(request.as_bytes()) {
+                warn!("Failed to send shutdown request: {err}");
+                return false;
+            }
+            let _ = stream.shutdown(Shutdown::Both);
+            true
+        }
+        Err(err) => {
+            debug!("Shutdown endpoint unreachable: {err}");
+            false
+        }
+    }
+}
+
+fn wait_for_exit(child: &mut Child, timeout: Duration) -> bool {
+    let start = Instant::now();
+    while start.elapsed() < timeout {
+        match child.try_wait() {
+            Ok(Some(_)) => return true,
+            Ok(None) => std::thread::sleep(Duration::from_millis(50)),
+            Err(err) => {
+                warn!("Failed to poll server process status: {err}");
+                break;
+            }
+        }
+    }
+    false
+}
+
 #[cfg(target_os = "windows")]
 fn kill_server() {
     if let Ok(mut guard) = SERVER_PROCESS.lock() {
         if let Some(mut child) = guard.take() {
             let pid = child.id();
             info!("Terminating server process (PID: {})", pid);
-            // Use taskkill for graceful shutdown on Windows
-            let _ = Command::new("taskkill")
-                .args(&["/PID", &pid.to_string(), "/T"])
-                .output();
+            let _ = request_graceful_shutdown();
 
-            // Poll for up to 5 seconds so we exit as soon as the server stops
-            for _ in 0..50 {
-                match child.try_wait() {
-                    Ok(Some(_)) => {
-                        set_server_status(ServerStatus::Stopped);
-                        return;
-                    }
-                    Ok(None) => {
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                    }
-                    Err(err) => {
-                        warn!("Failed to poll server process status: {err}");
-                        break;
-                    }
-                }
+            if wait_for_exit(&mut child, Duration::from_secs(2)) {
+                set_server_status(ServerStatus::Stopped);
+                return;
             }
 
-            // Force kill if still running after timeout
-            let _ = child.kill();
-            warn!("Server process did not exit after taskkill - forced kill issued");
+            debug!(
+                "Requesting taskkill for server process tree (PID: {})",
+                pid
+            );
+            issue_taskkill(pid, false);
+
+            if wait_for_exit(&mut child, Duration::from_secs(2)) {
+                set_server_status(ServerStatus::Stopped);
+                return;
+            }
+
+            warn!("Server process still running; forcing termination");
+            issue_taskkill(pid, true);
+
+            if let Err(err) = child.kill() {
+                warn!("Failed to force kill server process: {err}");
+            } else if let Err(err) = child.wait() {
+                warn!("Failed to wait for forced termination: {err}");
+            }
+
             set_server_status(ServerStatus::Stopped);
         }
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn issue_taskkill(pid: u32, force: bool) {
+    let mut cmd = Command::new("taskkill");
+    cmd.arg("/PID")
+        .arg(pid.to_string())
+        .arg("/T");
+
+    if force {
+        cmd.arg("/F");
+    }
+
+    cmd.creation_flags(CREATE_NO_WINDOW);
+
+    if let Err(err) = cmd.spawn() {
+        warn!(
+            "Failed to spawn taskkill{}: {err}",
+            if force { " /F" } else { "" }
+        );
     }
 }
 
@@ -285,25 +355,30 @@ fn kill_server() {
 fn kill_server() {
     if let Ok(mut guard) = SERVER_PROCESS.lock() {
         if let Some(mut child) = guard.take() {
-            // Unix: Send SIGTERM for graceful shutdown
             let pid = child.id() as i32;
+            let _ = request_graceful_shutdown();
+
+            if wait_for_exit(&mut child, Duration::from_secs(2)) {
+                set_server_status(ServerStatus::Stopped);
+                return;
+            }
+
             info!("Sending SIGTERM to server process (PID: {})", pid);
             unsafe {
                 libc::kill(pid, libc::SIGTERM);
             }
 
-            // Wait up to 5 seconds for graceful shutdown
-            for _ in 0..50 {
-                if child.try_wait().ok().flatten().is_some() {
-                    set_server_status(ServerStatus::Stopped);
-                    return;
-                }
-                std::thread::sleep(std::time::Duration::from_millis(100));
+            if wait_for_exit(&mut child, Duration::from_secs(3)) {
+                set_server_status(ServerStatus::Stopped);
+                return;
             }
 
-            // Force kill if still running
-            let _ = child.kill();
             warn!("Server process did not exit gracefully - forced kill issued");
+            if let Err(err) = child.kill() {
+                warn!("Failed to force kill server process: {err}");
+            } else if let Err(err) = child.wait() {
+                warn!("Failed to wait for forced termination: {err}");
+            }
             set_server_status(ServerStatus::Stopped);
         }
     }

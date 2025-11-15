@@ -1,24 +1,20 @@
 import { createServer, Server as HttpServer } from "http";
-import type { Socket } from "node:net";
 import { pathToFileURL } from "node:url";
 import type { Application } from "express";
 import { WebSocketServer } from "ws";
 import { createApp } from "./app/app.js";
 import type { AppContext } from "./app/context.js";
 import { loadAppConfig } from "./core/config/app-config.js";
-import {
-  closeDatabase,
-  getDatabase,
-  runMigrations,
-} from "./core/database/index.js";
+import { getDatabase, runMigrations } from "./core/database/index.js";
 import { createHttpClient } from "./shared/http/http-client.js";
 import { createLogger } from "./shared/logger.js";
 import { initializeWebSocketServer } from "./websocket/handlers.js";
+import {
+  bindServerLifecycle,
+  shutdownServer,
+} from "./runtime/server-lifecycle.js";
 
-// Store server instances for cleanup
-let httpServer: HttpServer | null = null;
-let websocketServer: WebSocketServer | null = null;
-const openSockets: Set<Socket> = new Set();
+export { shutdownServer } from "./runtime/server-lifecycle.js";
 
 /**
  * Initialize and configure the Express server with all routes, middleware,
@@ -49,84 +45,15 @@ export const initializeServer = (): {
   const app = createApp(context);
 
   const server = createServer(app);
-  httpServer = server;
-  // Track open TCP connections so we can destroy them on shutdown
-  server.on("connection", (socket: Socket) => {
-    openSockets.add(socket);
-    socket.on("close", () => openSockets.delete(socket));
-  });
 
   // Initialize WebSocket server
   const wss = new WebSocketServer({ server });
-  websocketServer = wss;
+  bindServerLifecycle(server, wss);
   initializeWebSocketServer(wss);
 
   console.log("✅ Server initialized successfully");
 
   return { app, server, wss };
-};
-
-/**
- * Gracefully shutdown the server, closing all connections and cleaning up resources.
- *
- * @returns Promise that resolves when shutdown is complete
- */
-export const shutdownServer = (): Promise<void> => {
-  return new Promise((resolve) => {
-    console.log("Starting graceful shutdown...");
-
-    // Set a timeout to force resolve if shutdown takes too long
-    const forceResolveTimeout = setTimeout(() => {
-      console.warn("Graceful shutdown timeout. Forcing resolve...");
-      resolve();
-    }, 10000); // 10 second timeout
-
-    if (!httpServer || !websocketServer) {
-      clearTimeout(forceResolveTimeout);
-      resolve();
-      return;
-    }
-
-    // 1. Stop accepting new connections and proactively destroy keep-alive sockets
-    for (const socket of openSockets) {
-      try {
-        socket.destroy();
-      } catch (err) {
-        console.warn("Error destroying socket", err);
-      }
-      openSockets.delete(socket);
-    }
-
-    httpServer.close((err) => {
-      if (err) {
-        console.error("Error closing HTTP server:", err);
-      } else {
-      console.log("HTTP server closed");
-    }
-
-    // 2. Close WebSocket connections
-    websocketServer?.clients.forEach((client) => {
-        client.close();
-      });
-      websocketServer?.close(() => {
-        console.log("WebSocket server closed");
-      });
-
-    // 3. Close database connection
-    try {
-      closeDatabase();
-      console.log("Database closed");
-      } catch (error) {
-        console.error("Error closing database:", error);
-      }
-
-      // Clear the force resolve timeout
-      clearTimeout(forceResolveTimeout);
-
-      console.log("Graceful shutdown complete");
-      resolve();
-    });
-  });
 };
 
 // Only start server if running standalone (not imported by Electron)

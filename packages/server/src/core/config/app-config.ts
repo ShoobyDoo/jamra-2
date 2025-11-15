@@ -31,6 +31,10 @@ interface SettingsConfig {
   tableName: string;
 }
 
+interface SystemConfig {
+  allowShutdown: boolean;
+}
+
 export interface AppConfig {
   env: "development" | "production" | "test";
   catalog: CatalogConfig;
@@ -38,6 +42,7 @@ export interface AppConfig {
   installer: InstallerConfig;
   sandbox: SandboxConfig;
   settings: SettingsConfig;
+  system: SystemConfig;
 }
 
 const parseBoolean = (value: string | undefined, fallback: boolean): boolean =>
@@ -103,6 +108,12 @@ export const loadAppConfig = (): AppConfig => {
     },
     settings: {
       tableName: "settings",
+    },
+    system: {
+      allowShutdown: parseBoolean(
+        process.env.JAMRA_ALLOW_SHUTDOWN,
+        false,
+      ),
     },
   };
 };
