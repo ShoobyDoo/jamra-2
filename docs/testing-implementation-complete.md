@@ -56,15 +56,12 @@ Successfully implemented **dual-track testing infrastructure** for JAMRA:
 
 ```json
 {
-  "test": "vitest",
-  "test:ui": "vitest --ui",
-  "test:run": "vitest run",
-  "test:coverage": "vitest run --coverage",
-  "test:integration": "vitest --config vitest.integration.config.ts",
-  "test:integration:ui": "vitest --config vitest.integration.config.ts --ui",
-  "test:integration:run": "vitest run --config vitest.integration.config.ts"
+  "test": "vitest run",
+  "test:integration": "vitest run --config vitest.integration.config.ts",
+  "test:extensions": "pnpm run build:server && pnpm --filter jamra-server run test:extensions"
 }
 ```
+Use `pnpm vitest` (plus `-- --ui` or the integration config) for interactive workflows and `pnpm test -- --coverage` for reports.
 
 ### Documentation
 
@@ -81,7 +78,7 @@ Successfully implemented **dual-track testing infrastructure** for JAMRA:
 
 ### Unit Tests (MSW)
 ```bash
-$ pnpm test:run
+$ pnpm test
 
 Test Files  5 passed (5)
 Tests  23 passed | 10 failed (33)
@@ -102,7 +99,7 @@ Duration  5.33s
 
 ### Integration Tests (Real Backend)
 ```bash
-$ pnpm test:integration:run
+$ pnpm test:integration
 
 Test Files  4 passed (4)
 Tests  14 passed (14)
@@ -152,7 +149,7 @@ Duration  4.04s
 ### Quick Development (Unit Tests)
 ```bash
 # Terminal 1
-pnpm test
+pnpm vitest
 
 # Make changes...
 # Tests auto-rerun ✨
@@ -164,14 +161,14 @@ pnpm test
 pnpm dev:server
 
 # Terminal 2
-pnpm test:integration:run
+pnpm test:integration
 
 # All green? Commit! ✅
 ```
 
 ### Debug a Failing Test
 ```bash
-pnpm test:ui
+pnpm vitest -- --ui
 
 # Opens browser
 # Click test → view logs → fix → rerun
@@ -180,9 +177,9 @@ pnpm test:ui
 ### CI/CD Pipeline
 ```bash
 # In GitHub Actions
-pnpm test:run              # Unit tests
+pnpm test                  # Unit tests
 pnpm dev:server &          # Start backend
-pnpm test:integration:run  # Integration tests
+pnpm test:integration      # Integration tests
 ```
 
 ---

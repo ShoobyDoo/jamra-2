@@ -21,7 +21,7 @@ import {
   IconDownload,
   IconX,
 } from "@tabler/icons-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   useInstallExtension,
   useInstallerJob,
@@ -221,48 +221,52 @@ export const InstallerForm: React.FC = () => {
 };
 
 // Sub-component to handle individual job polling
-const JobProgressCard: React.FC<{
+export const JobProgressCard: React.FC<{
   jobId: string;
   onComplete: (job: InstallJob) => void;
 }> = ({ jobId, onComplete }) => {
   const { data: job, isLoading } = useInstallerJob(jobId, {
     refetchInterval: 1000,
   });
-  const [notifiedCompletion, setNotifiedCompletion] = useState(false);
+  const completionMarkerRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (
-      job &&
-      (job.status === "completed" || job.status === "failed") &&
-      !notifiedCompletion
-    ) {
-      // Defer state updates and callbacks to the next tick to avoid synchronous setState within the effect
-      const timer = window.setTimeout(() => {
-        setNotifiedCompletion(true); // TODO: REVISE THIS. STATE UPDATE WITHIN A useEffect() HOOK IS NOT GOOD PRACTICE AND FROWNED UPON BY REACT.
-        onComplete(job);
+    completionMarkerRef.current = null;
+  }, [jobId]);
 
-        if (job.status === "completed") {
-          notifications.show({
-            title: "Installation Complete",
-            message: `Extension ${job.extensionId} installed successfully`,
-            color: "green",
-            icon: <IconCheck size={16} />,
-          });
-        } else {
-          notifications.show({
-            title: "Installation Failed",
-            message: `Extension ${job.extensionId} failed: ${job.error || "Unknown error"}`,
-            color: "red",
-            icon: <IconX size={16} />,
-          });
-        }
-      }, 0);
-
-      return () => {
-        clearTimeout(timer);
-      };
+  useEffect(() => {
+    if (!job) {
+      return;
     }
-  }, [job, notifiedCompletion, onComplete]);
+    const isTerminal = job.status === "completed" || job.status === "failed";
+    if (!isTerminal) {
+      return;
+    }
+
+    const marker = `${job.jobId}-${job.completedAt ?? "pending"}`;
+    if (completionMarkerRef.current === marker) {
+      return;
+    }
+
+    completionMarkerRef.current = marker;
+    onComplete(job);
+
+    if (job.status === "completed") {
+      notifications.show({
+        title: "Installation Complete",
+        message: `Extension ${job.extensionId} installed successfully`,
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+    } else {
+      notifications.show({
+        title: "Installation Failed",
+        message: `Extension ${job.extensionId} failed: ${job.error || "Unknown error"}`,
+        color: "red",
+        icon: <IconX size={16} />,
+      });
+    }
+  }, [job, onComplete]);
 
   if (isLoading || !job) {
     return (

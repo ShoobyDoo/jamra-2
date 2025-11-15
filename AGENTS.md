@@ -4,19 +4,19 @@
 
 - App root: `JAMRA/`
 - Frontend (Vite + React): `src/`, entry `src/main.tsx`
-- Electron (main/preload): `electron/main.ts`, `electron/preload.ts`
+- Desktop shell (Tauri): `src-tauri/` (Rust builder + `tauri.conf.json`)
 - Backend (Express + better-sqlite3): `server/src/` → builds to `server/dist/`
-- Packaging config: `electron-builder.yml`; release output: `release/`
+- Packaging config: `src-tauri/tauri.conf.json`; release output: `src-tauri/target/release/`
 - Docs: `docs/` (packaging, troubleshooting, structure)
 
 ## Build, Test, Development
 
-- Dev frontend: `pnpm dev`
+- Dev frontend: `pnpm dev:frontend`
 - Dev backend: `pnpm dev:server`
-- Dev both (concurrently): `pnpm dev:all`
+- Dev both (concurrently): `pnpm dev`
+- Desktop shell (Tauri): `pnpm tauri:dev`
 - Production build (app + server): `pnpm build && pnpm build:server`
-- Windows distributables (installer + portable): `pnpm dist:win`
-- macOS/Linux (run on those OSes): `pnpm dist:mac`, `pnpm dist:linux`
+- Desktop bundle (all platforms): `pnpm tauri:build` (runs on host OS)
 
 ## Coding Style & Naming
 
@@ -41,16 +41,14 @@
 
 ## Platform & Packaging Notes
 
-- **Electron Builder** is used for packaging (configured in `electron-builder.yml`)
-  - Windows: NSIS installer + portable EXE
-  - macOS: DMG + ZIP
-  - Linux: DEB
-- Preload is built as CommonJS and unpacked: `dist-electron/preload.js`
-- Server schema is bundled via `extraResources` at `resources/server/schema.sql`
-- better-sqlite3 is external and rebuilt by `postinstall` (`electron-builder install-app-deps`)
-- Release output directory: `release/`
+- **Tauri** handles packaging (see `src-tauri/tauri.conf.json`)
+  - `beforeDevCommand`: `pnpm dev` (frontend + server watchers)
+  - `beforeBuildCommand`: `pnpm build` (frontend + backend bundle)
+  - Resources bundled with the app: `dist/`, `server/dist/`, `resources/`, `node_modules/`
+- The packaged app currently expects the host to have Node.js 24 available. Bundling a portable Node runtime is tracked separately.
+- Release artifacts land in `src-tauri/target/release/`
 
 ## Support & Troubleshooting
 
-- See `docs/Windows-Electron-Packaging.md` and `docs/Troubleshooting-Windows.md`
-- If the app lingers after close, tail the log and file an issue with timestamps
+- Existing Electron docs (`docs/Windows-Electron-Packaging.md`, etc.) are considered legacy reference. New Tauri-specific notes live alongside `docs/manual-verification-checklist.md`.
+- If the bundled server fails to start, inspect the Tauri stdout logs (the Rust host emits spawn errors) and ensure Node.js 24+ is installed system-wide.

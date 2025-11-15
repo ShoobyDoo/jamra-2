@@ -16,7 +16,7 @@ The installer module (`server/src/modules/installer`) automates extension instal
 | Service | `installer.service.ts` | Queues jobs, processes them sequentially, updates DB state, and coordinates downloader → compiler → packager steps. |
 | GitRepositoryFetcher | `fetchers/git-fetcher.ts` | Normalises repo URLs to raw `index.json` links, downloads JSON via the shared HTTP client, and validates schema. |
 | ExtensionSourceFetcher | `fetchers/source-fetcher.ts` | Fetches entrypoint/manifest/package files declared in repository metadata. |
-| ExtensionCompiler | `compiler/extension-compiler.ts` | Bundles TypeScript/JavaScript entrypoints using esbuild; enforces consistent target (`node18/20`). |
+| ExtensionCompiler | `compiler/extension-compiler.ts` | Bundles TypeScript/JavaScript entrypoints via esbuild by materialising fetched files into a temp workspace so multi-file imports compile against a consistent Node target. |
 | FileExtensionPackager | `packager.ts` | Writes compiled code + manifest to `resources/extensions/<id>`, ensures directories exist, and upserts DB rows. |
 | Validator | `validators/schema-validator.ts` | Provides strict validation for `index.json` to prevent unexpected keys or unsupported schema versions. |
 

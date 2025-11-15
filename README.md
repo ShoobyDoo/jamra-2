@@ -1,6 +1,6 @@
 # JAMRA
 
-A feature-rich manga reader desktop application built with Electron, React, and Express.
+A feature-rich manga reader desktop application built with Tauri, React, and Express.
 
 ## Tech Stack
 
@@ -21,14 +21,14 @@ A feature-rich manga reader desktop application built with Electron, React, and 
 
 ### Desktop
 
-- **Electron 38+** - Desktop wrapper
-- **Electron Builder** - Packaging (NSIS/Portable/DMG/DEB)
+- **Tauri 2** - Rust-based desktop wrapper
+- **Rust (stable)** - Host runtime that spawns the bundled Node/Express server
 
-### Background Mode & Tray Controls
+### Desktop Runtime Notes
 
-- Closing the Electron window now hides JAMRA to the system tray (default behavior) so the bundled server keeps running.
-- Use the tray menu to show the window again, open the app in your browser at `http://localhost:<configured-port>`, or exit completely.
-- Toggle “Close button minimizes to tray” from **Settings → Window Behavior** if you prefer the classic quit-on-close workflow.
+- Development runs `pnpm dev` (Vite + server) while `tauri dev` opens the native shell.
+- Packaged builds run the compiled Express server via Tauri on port `3000`.
+- The bundled server currently relies on the system Node.js runtime (24.x recommended). Shipping a portable Node binary is tracked separately.
 
 > **Note**: Version numbers listed above represent major versions. For exact dependency versions, refer to `package.json`.
 
@@ -37,7 +37,7 @@ A feature-rich manga reader desktop application built with Electron, React, and 
 The app uses a **modular REST API architecture** with an extension system:
 
 - **Backend Server**: Express REST API on `http://localhost:3000`
-- **Frontend**: React SPA accessible in Electron OR browser
+- **Frontend**: React SPA accessible in the Tauri shell OR browser
 - **Database**: SQLite for local storage
 - **Extensions**: Modular system for manga sources (weebcentral, batoto, etc.)
 - **WebSocket**: Real-time updates for downloads and progress
@@ -62,9 +62,10 @@ JAMRA/
 │   │   ├── types/         # Legacy TypeScript types
 │   │   └── websocket/     # WebSocket handlers for real-time updates
 │   └── tsconfig.json
-├── electron/              # Electron main process
-│   ├── main.ts           # Window management & server launcher
-│   └── preload.ts        # Minimal preload script
+├── src-tauri/            # Tauri Rust project (desktop shell + server launcher)
+│   ├── src/main.rs       # Spawns the production Express server
+│   ├── tauri.conf.json   # Bundling/dev configuration
+│   └── Cargo.toml        # Rust manifest
 ├── src/                   # React frontend
 │   ├── components/       # UI components
 │   ├── hooks/queries/    # TanStack Query hooks
@@ -108,20 +109,15 @@ pnpm dev
 # Open http://localhost:5173 in your browser
 ```
 
-**Option 2: Run in Electron (Full Desktop App)**
+**Option 2: Run the Native Shell (Tauri)**
 
 ```bash
-# Terminal 1: Start backend server
-pnpm dev:server
+# Start the dev shell (spawns pnpm dev under the hood)
+pnpm tauri:dev
 
-# Terminal 2: Start Vite + Electron
-pnpm dev
-
-# Electron window will open automatically!
-# vite-plugin-electron compiles main.ts/preload.ts and launches the app
+# Tauri opens a native window pointing at the Vite dev server.
+# The backend server is already running because `pnpm dev` runs both halves.
 ```
-
-> **Note**: `pnpm dev` automatically compiles Electron TypeScript files and launches the Electron window. You no longer need a separate `dev:electron` command!
 
 ### Building
 
@@ -132,45 +128,30 @@ pnpm build
 # Build backend
 pnpm build:server
 
-# Package distributables for current OS
-pnpm make
+# Build a signed/bundled desktop app (runs `pnpm build` automatically)
+pnpm tauri:build
 ```
-
-### Platform-Specific Builds (Electron Builder)
-
-Build distributables for each platform:
-
-```bash
-# Windows installer (NSIS) and portable EXE
-pnpm dist:win
-
-# macOS dmg/zip
-pnpm dist:mac
-
-# Linux deb
-pnpm dist:linux
-```
-
-Electron Builder is configured in `electron-builder.yml` and includes:
-
-- Files: `dist/**`, `dist-electron/**`, `server/dist/**`
-- ASAR unpack for native modules: `**/*.node`
-- Windows targets: NSIS installer + Portable EXE
-- macOS targets: DMG + ZIP
-- Linux targets: DEB
-
-### Windows Prerequisites (better-sqlite3)
-
-- Install Visual Studio 2022 Build Tools with “Desktop development with C++” and Windows 10/11 SDK.
-- Install Python 3 and ensure `python` is on PATH.
-- After `pnpm install`, native modules are rebuilt automatically via `postinstall`:
-  - `electron-rebuild -f -w better-sqlite3`
 
 ### Log Files (for debugging packaged exe)
 
 - Main/server logs: `%APPDATA%/JAMRA/logs/main.log`
 - On macOS: `~/Library/Application Support/JAMRA/logs/main.log`
 - On Linux: `~/.config/JAMRA/logs/main.log`
+
+# Manual Verification Checklist
+
+Before cutting a release or publishing new installers, run the manual smoke steps in [`docs/manual-verification-checklist.md`](docs/manual-verification-checklist.md). The checklist walks through:
+
+- Building a packaged Tauri bundle (`pnpm tauri:build`).
+- Launching the installer/portable build and verifying migrations completed.
+- Hitting `http://localhost:3000/health` once the bundled server boots.
+- Spot-checking `%APPDATA%/JAMRA` (or platform equivalent) for the SQLite DB and log outputs.
+
+Document any anomalies you uncover so the next run has known-good reference points. A dedicated Tauri packaging checklist is in-flight; until then, treat the existing Electron-focused doc as a legacy reference.
+| `JAMRA_SMOKE_TIMEOUT` | `20000` (ms) | Max wait before declaring failure. |
+| `JAMRA_SMOKE_TMP` | `<repo>/.tmp-smoke` | Location for temporary DB/log artifacts. |
+
+If the script fails, inspect the emitted `[server]` logs and rerun after addressing the issue.
 
 ## State Management
 
@@ -231,9 +212,9 @@ Real-time updates via WebSocket:
 
 Better-SQLite3 uses **native bindings** which require special handling:
 
-1. **Native Bindings**: Rebuilt on install (`postinstall`) for the active Electron version.
+1. **Native Bindings**: Built during `pnpm install` for the active system Node.js runtime (24+ recommended). Re-run `pnpm rebuild better-sqlite3` after upgrading Node.
 
-2. **Packaging targets**: Electron Builder configured for Windows (NSIS + Portable), macOS (DMG/ZIP), Linux (DEB). Build per-OS on native runners (no cross‑OS signing/building).
+2. **Packaging targets**: `pnpm tauri:build` must be executed on each OS you intend to support so the Rust bundle links against the proper system libraries.
 
 3. **Testing**: Build and test on each target platform:
    - Windows x64/arm64
@@ -241,23 +222,21 @@ Better-SQLite3 uses **native bindings** which require special handling:
    - Linux x64/arm64
 
 4. **Troubleshooting**: If native bindings fail:
-   - Ensure Node.js 20+ is installed
-   - Run `pnpm exec electron-rebuild -f -w better-sqlite3`
-   - Check `logs/main.log` for errors
+   - Ensure Node.js 24+ is installed
+   - Remove `node_modules` and reinstall (`pnpm install`)
+   - Confirm the bundled app can locate the shipped `node_modules` folder
 
 ## Scripts
 
-- `pnpm dev` - Start Vite dev server + compile & launch Electron (auto)
+- `pnpm dev` - Run Vite frontend + Express backend concurrently
+- `pnpm dev:frontend` - Start the Vite dev server only
 - `pnpm dev:server` - Start Express backend with watch mode
-- `pnpm dev:all` - Run both frontend and backend concurrently
 - `pnpm build` - Build frontend for production
 - `pnpm build:server` - Build backend for production
-- `pnpm make` - Package Electron app for current OS
-- `pnpm dist:win` - Build Windows installer + portable EXE
-- `pnpm dist:mac` - Build macOS DMG + ZIP
-- `pnpm dist:linux` - Build Linux DEB
+- `pnpm tauri:dev` - Launch the native Tauri shell wired to Vite dev server
+- `pnpm tauri:build` - Create a release-ready Tauri bundle for the host OS
 - `pnpm lint` - Run ESLint
-- `pnpm test:extensions` - Test extensions (in development)
+- `pnpm test:extensions` - Validate bundled extensions (manifest + compiler harness)
 
 ## Routes
 

@@ -89,7 +89,9 @@ export const InstalledExtensionsList: React.FC<InstalledExtensionsListProps> = (
                   </Table.Td>
                   <Table.Td>
                     <Text size="sm" c="dimmed">
-                      {new Date(ext.installedAt).toLocaleDateString()}
+                      {ext.installedAt
+                        ? new Date(ext.installedAt).toLocaleDateString()
+                        : "Unknown"}
                     </Text>
                   </Table.Td>
                   <Table.Td>

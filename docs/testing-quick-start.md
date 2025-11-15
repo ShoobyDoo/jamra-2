@@ -65,10 +65,10 @@ Tests  11 passed (11)
 
 ```bash
 # Unit tests UI
-pnpm test:ui
+pnpm vitest -- --ui
 
 # Integration tests UI (start backend first!)
-pnpm test:integration:ui
+pnpm vitest -- --config vitest.integration.config.ts --ui
 ```
 
 Opens browser at `http://localhost:51204/__vitest__/`
@@ -79,15 +79,15 @@ Opens browser at `http://localhost:51204/__vitest__/`
 
 ```bash
 # Unit tests (fast, mocked)
-pnpm test              # Watch mode
-pnpm test:ui           # Browser UI
-pnpm test:run          # Run once
-pnpm test:coverage     # With coverage
+pnpm vitest        # Watch mode
+pnpm vitest -- --ui           # Browser UI
+pnpm test              # Run once
+pnpm test -- --coverage     # With coverage
 
 # Integration tests (real backend)
-pnpm test:integration        # Watch mode
-pnpm test:integration:ui     # Browser UI
-pnpm test:integration:run    # Run once
+pnpm vitest -- --config vitest.integration.config.ts --watch  # Watch mode
+pnpm vitest -- --config vitest.integration.config.ts --ui     # Browser UI
+pnpm test:integration        # Run once
 ```
 
 ---

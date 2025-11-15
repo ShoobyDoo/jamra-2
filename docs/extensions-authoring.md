@@ -265,7 +265,7 @@ Export only the `ExtensionModule` from `index.ts`. Any helper modules (`client.t
    curl "http://localhost:3000/api/extensions/<id>/manga/<slug>"
    ```
 
-   Automated extension tests are not available yet; `pnpm test:extensions` simply builds the server and reports that the suite is pending.
+   When you're ready to validate the bundle, run `pnpm test:extensions`. The harness builds the server, validates every manifest under `resources/extensions`, compiles TypeScript entrypoints via the installer compiler, and checks any repository-style `index.json` files under `resources/catalog/**` against the schema when present. The command fails fast if a manifest is missing required fields, the entrypoint is absent, or compilation breaks.
 
 ---
 
@@ -294,7 +294,7 @@ Export only the `ExtensionModule` from `index.ts`. Any helper modules (`client.t
 - **Annotate headers** – Provide any required HTTP headers (referers, cookies, authorization) in the `Page` objects so the reader can fetch images without additional logic.
 - **Rate limiting** – If your source enforces limits, implement throttling or batching inside your helper modules. Expose concurrency knobs via `settingsSchema`.
 - **Error handling** – Throw `Error` with descriptive messages. The runtime will wrap them in `ValidationError` responses for the REST API.
-- **Testing** – A formal extension test harness is still TODO. For now rely on manual API checks and keep helper modules easy to unit test independently.
+- **Testing** – Run `pnpm test:extensions` to execute the automated manifest/compile harness before submitting changes; keep helper modules easy to unit test independently for deeper coverage.
 
 ---
 

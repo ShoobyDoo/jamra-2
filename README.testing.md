@@ -9,16 +9,16 @@ Complete guide for running tests in the JAMRA application.
 ### Unit Tests (MSW Mocked)
 ```bash
 # Watch mode
-pnpm test
+pnpm vitest
 
 # UI mode
-pnpm test:ui
+pnpm vitest -- --ui
 
 # Run once
-pnpm test:run
+pnpm test
 
 # With coverage
-pnpm test:coverage
+pnpm test -- --coverage
 ```
 
 ### Integration Tests (Real Backend)
@@ -29,11 +29,11 @@ pnpm dev:server
 # Then in another terminal:
 pnpm test:integration
 
-# UI mode
-pnpm test:integration:ui
+# Watch mode
+pnpm vitest -- --config vitest.integration.config.ts --watch
 
-# Run once
-pnpm test:integration:run
+# UI mode
+pnpm vitest -- --config vitest.integration.config.ts --ui
 ```
 
 ---
@@ -153,6 +153,12 @@ it('fetches library list from real backend', async () => {
 - **Setup:** `src/test/integration-setup.ts`
 - **Utilities:** `src/test/integration-utils.tsx`
 
+### Packaging Smoke Test
+- **Script:** `pnpm smoke:packaging`
+- **What it does:** Boots the compiled backend bundle (`server/dist/index.js`) with production-like env vars, waits for `http://localhost:32100/health`, and shuts down.
+- **Prereq:** Run `pnpm build` (or at least `pnpm build:server`) so `server/dist` exists.
+- **Use cases:** Pre-release sanity checks, CI guardrails to ensure better-sqlite3 and migrations succeed after compilation.
+
 ---
 
 ## Running Specific Tests
@@ -183,7 +189,7 @@ pnpm test src/hooks/queries/useLibraryQueries.test.ts
 
 ### 1. Use Vitest UI
 ```bash
-pnpm test:ui
+pnpm vitest -- --ui
 ```
 Opens browser interface with:
 - Visual test results
@@ -244,7 +250,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
       - run: pnpm install
-      - run: pnpm test:run
+      - run: pnpm test
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -255,7 +261,7 @@ jobs:
       - run: pnpm build:server
       - run: pnpm dev:server &
       - run: sleep 5
-      - run: pnpm test:integration:run
+      - run: pnpm test:integration
 ```
 
 ---
@@ -438,8 +444,8 @@ pnpm test:integration useSettingsQueries
 |-----------|---------|-------|--------------|----------|
 | Unit | `pnpm test` | Fast | None | Development TDD |
 | Integration | `pnpm test:integration` | Slower | Backend running | Pre-deployment validation |
-| Coverage | `pnpm test:coverage` | Fast | None | Coverage reports |
-| UI Mode | `pnpm test:ui` | Interactive | None | Debugging |
+| Coverage | `pnpm test -- --coverage` | Fast | None | Coverage reports |
+| UI Mode | `pnpm vitest -- --ui` | Interactive | None | Debugging |
 
 **Recommendation:** Run unit tests frequently during development, run integration tests before commits/PRs.
 
@@ -452,7 +458,7 @@ pnpm test:integration useSettingsQueries
 3. ✅ Run integration tests: `pnpm test:integration`
 4. 📝 Add tests for new features
 5. 🔄 Set up CI/CD pipeline
-6. 📊 Monitor coverage: `pnpm test:coverage`
+6. 📊 Monitor coverage: `pnpm test -- --coverage`
 
 ---
 

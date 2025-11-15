@@ -48,7 +48,7 @@ pnpm dev:server
 ### Watch Mode (Recommended during development)
 
 ```bash
-pnpm test:integration
+pnpm vitest -- --config vitest.integration.config.ts --watch
 ```
 
 - Watches for file changes
@@ -58,7 +58,7 @@ pnpm test:integration
 ### UI Mode (Interactive)
 
 ```bash
-pnpm test:integration:ui
+pnpm vitest -- --config vitest.integration.config.ts --ui
 ```
 
 - Opens browser-based test UI
@@ -68,7 +68,7 @@ pnpm test:integration:ui
 ### Run Once (CI/Production)
 
 ```bash
-pnpm test:integration:run
+pnpm test:integration
 ```
 
 - Runs all tests once
@@ -303,7 +303,7 @@ jobs:
           sleep 5  # Wait for server to start
 
       - name: Run integration tests
-        run: pnpm test:integration:run
+        run: pnpm test:integration
 
       - name: Stop server
         run: pkill -f "tsx watch"
@@ -381,7 +381,7 @@ pnpm test:integration useSettingsQueries
 Vitest runs tests in parallel by default. To run serially:
 
 ```bash
-pnpm test:integration:run --no-threads
+pnpm test:integration --no-threads
 ```
 
 ### Reduce Database I/O

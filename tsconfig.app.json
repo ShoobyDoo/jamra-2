@@ -32,6 +32,14 @@
     "src"
   ],
   "exclude": [
-    "src/test"
+    "src/test",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "resources/**",
+    "server/**"
+  ],
+  "references": [
+    { "path": "./packages/contracts" }
   ]
 }

@@ -109,7 +109,11 @@ export const ExtensionDetailDrawer: React.FC<ExtensionDetailDrawerProps> = ({
             <Text size="sm" c="dimmed" mb={4}>
               Installed At
             </Text>
-            <Text>{new Date(extension.installedAt).toLocaleString()}</Text>
+            <Text>
+              {extension.installedAt
+                ? new Date(extension.installedAt).toLocaleString()
+                : "Unknown"}
+            </Text>
           </div>
 
           {/* Manifest */}
@@ -123,17 +127,13 @@ export const ExtensionDetailDrawer: React.FC<ExtensionDetailDrawerProps> = ({
           </div>
 
           {/* Languages */}
-          {extension.manifest.languages && extension.manifest.languages.length > 0 && (
+          {extension.manifest.language && (
             <div>
               <Text size="sm" c="dimmed" mb={8}>
                 Supported Languages
               </Text>
               <Group gap="xs">
-                {extension.manifest.languages.map((lang) => (
-                  <Badge key={lang} variant="outline">
-                    {lang}
-                  </Badge>
-                ))}
+                <Badge variant="outline">{extension.manifest.language}</Badge>
               </Group>
             </div>
           )}

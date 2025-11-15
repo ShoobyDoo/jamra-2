@@ -1,5 +1,4 @@
 import {
-  Alert,
   Card,
   Divider,
   NumberInput,
@@ -10,8 +9,8 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconInfoCircle } from "@tabler/icons-react";
-import React, { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import React, { type ChangeEvent, useEffect } from "react";
 import {
   DEFAULT_SETTINGS,
   DOWNLOAD_QUALITY_OPTIONS,
@@ -26,122 +25,7 @@ import {
   useSetting,
   useUpdateSetting,
 } from "../hooks/queries/useSettingsQueries";
-import type {
-  PreferenceKey,
-  PreferenceValueMap,
-} from "../types/electron-api";
-
-const CLOSE_TO_TRAY_KEY: PreferenceKey = "closeButtonMinimizesToTray";
-const DEFAULT_BEHAVIOR: PreferenceValueMap[typeof CLOSE_TO_TRAY_KEY] = true;
-
 export const SettingsPage: React.FC = () => {
-  const isElectron = useMemo(
-    () => typeof window !== "undefined" && Boolean(window.electron),
-    [],
-  );
-  const preferenceAPI =
-    typeof window === "undefined" ? undefined : window.electron?.preferences;
-  const [closeToTray, setCloseToTray] = useState(DEFAULT_BEHAVIOR);
-  const [isLoading, setIsLoading] = useState(isElectron);
-  const [isSaving, setIsSaving] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isElectron || !preferenceAPI) {
-      setIsLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
-    preferenceAPI
-      .get(CLOSE_TO_TRAY_KEY)
-      .then((value) => {
-        if (!mounted) return;
-        setCloseToTray(value);
-        setErrorMessage(null);
-      })
-      .catch((error) => {
-        console.error("Failed to load close-to-tray preference", error);
-        if (!mounted) return;
-        setErrorMessage("Unable to load desktop preference.");
-      })
-      .finally(() => {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      });
-
-    const unsubscribe = preferenceAPI.subscribe(
-      CLOSE_TO_TRAY_KEY,
-      (value) => mounted && setCloseToTray(value),
-    );
-
-    return () => {
-      mounted = false;
-      unsubscribe?.();
-    };
-  }, [isElectron, preferenceAPI]);
-
-  const handleToggle = async (
-    event: ChangeEvent<HTMLInputElement>,
-  ): Promise<void> => {
-    if (!preferenceAPI) return;
-    const nextValue = event.currentTarget.checked;
-    const previousValue = closeToTray;
-    setIsSaving(true);
-    setErrorMessage(null);
-    setCloseToTray(nextValue);
-
-    try {
-      await preferenceAPI.set(CLOSE_TO_TRAY_KEY, nextValue);
-    } catch (error) {
-      console.error("Failed to update close-to-tray preference", error);
-      setCloseToTray(previousValue);
-      setErrorMessage("Saving failed. Please try again.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const renderDesktopSetting = () => {
-    if (!isElectron) {
-      return (
-        <Alert
-          color="gray"
-          radius="md"
-          variant="light"
-          icon={<IconInfoCircle size={18} />}
-        >
-          Desktop-only preference. Launch JAMRA via the Electron app to adjust
-          tray behavior.
-        </Alert>
-      );
-    }
-
-    return (
-      <Stack gap="xs">
-        <Switch
-          label="Close button minimizes to tray"
-          description="Hide JAMRA when you click the close button. The app keeps running in the background so the server and tray controls stay available."
-          checked={closeToTray}
-          disabled={isLoading || isSaving}
-          onChange={handleToggle}
-        />
-        {isLoading && (
-          <Text size="sm" c="dimmed">
-            Loading preference from the desktop app…
-          </Text>
-        )}
-        {errorMessage && (
-          <Text size="sm" c="red.6">
-            {errorMessage}
-          </Text>
-        )}
-      </Stack>
-    );
-  };
-
   return (
     <div className="mx-auto max-w-6xl">
       <Title order={1} className="mb-2">
@@ -152,17 +36,16 @@ export const SettingsPage: React.FC = () => {
       </Text>
 
       <Stack gap="lg">
-        {/* Window Behavior (Electron only) */}
+        {/* Window Behavior (Desktop) */}
         <Card withBorder padding="xl" radius="lg">
           <Stack gap="md">
             <div>
               <Text fw={600}>Window Behavior</Text>
               <Text size="sm" c="dimmed">
-                Control how JAMRA handles the close button while the web server
-                keeps running.
+                Control how the application window behaves when closed.
               </Text>
             </div>
-            {renderDesktopSetting()}
+            <MinimizeToTraySwitch />
           </Stack>
         </Card>
 
@@ -401,6 +284,69 @@ const SettingSwitch: React.FC<SettingSwitchProps> = ({
     <Switch
       label={label}
       description={description}
+      checked={checked}
+      onChange={handleChange}
+      disabled={isLoading || updateSetting.isPending}
+    />
+  );
+};
+
+/**
+ * Special switch for minimize-to-tray that syncs with Tauri
+ */
+const MinimizeToTraySwitch: React.FC = () => {
+  const settingKey = SETTING_KEYS.APP.MINIMIZE_TO_TRAY;
+  const defaultValue = DEFAULT_SETTINGS[settingKey] as boolean;
+  const { data: setting, isLoading } = useSetting<boolean>(settingKey);
+  const updateSetting = useUpdateSetting();
+
+  const checked = setting?.value ?? defaultValue;
+
+  // Sync to Tauri state whenever the setting changes
+  useEffect(() => {
+    const syncToTauri = async () => {
+      try {
+        await invoke("set_minimize_to_tray", { enabled: checked });
+      } catch (error) {
+        console.error("Failed to sync minimize-to-tray to Tauri:", error);
+      }
+    };
+
+    syncToTauri();
+  }, [checked]);
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.currentTarget.checked;
+
+    updateSetting.mutate(
+      {
+        key: settingKey,
+        value: newValue,
+        scope: getScopeFromKey(settingKey),
+      },
+      {
+        onSuccess: () => {
+          notifications.show({
+            title: "Setting Updated",
+            message: "Minimize to tray preference has been updated",
+            color: "green",
+          });
+        },
+        onError: (error) => {
+          notifications.show({
+            title: "Update Failed",
+            message: error.message || "Failed to update setting",
+            color: "red",
+          });
+        },
+      },
+    );
+  };
+
+  return (
+    <Switch
+      label="Minimize to System Tray"
+      description="When enabled, closing the window minimizes to tray instead of exiting"
       checked={checked}
       onChange={handleChange}
       disabled={isLoading || updateSetting.isPending}

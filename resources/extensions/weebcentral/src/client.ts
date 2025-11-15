@@ -6,7 +6,7 @@ import type {
   Manga,
   MangaDetailsResult,
   Page,
-} from "../../../../server/src/sdk/index.ts";
+} from "@jamra/contracts";
 import {
   ChapterListBuilder,
   type ChapterSource,
@@ -20,7 +20,7 @@ import {
   extractSlugFromUrl as resolveSlugFromUrl,
   normalizeStatusValue,
   extractChapterNumber as resolveChapterNumber,
-} from "../../../../server/src/sdk/index.ts";
+} from "../../../../packages/server/src/sdk/index.ts";
 
 const BASE_URL = "https://weebcentral.com";
 const DEFAULT_HEADERS = {

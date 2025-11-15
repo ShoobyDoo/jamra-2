@@ -13,6 +13,7 @@ export const SETTING_KEYS = {
   APP: {
     THEME: "app.theme",
     LANGUAGE: "app.language",
+    MINIMIZE_TO_TRAY: "app.minimizeToTray",
   },
   // Reader scope settings
   READER: {
@@ -101,6 +102,7 @@ export const THEME_OPTIONS = [
 export const DEFAULT_SETTINGS = {
   [SETTING_KEYS.APP.THEME]: "auto",
   [SETTING_KEYS.APP.LANGUAGE]: "en",
+  [SETTING_KEYS.APP.MINIMIZE_TO_TRAY]: true,
   [SETTING_KEYS.READER.PAGE_FIT]: "width",
   [SETTING_KEYS.READER.READING_DIRECTION]: "ltr",
   [SETTING_KEYS.READER.PAGE_TURN_MODE]: "click",

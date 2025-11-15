@@ -202,7 +202,12 @@ Comprehensive plan derived from the backend references in `docs/backend/*.md` (s
   4. Implement downloads list page with grouping (by library item), progress bars, concurrency indicator, failure/error details, plus `GET /api/downloads/stats` for disk usage banner.
   5. Enhance Queue popover: when opened, subscribe to the selected download IDs via `wsClient.subscribeToDownload` and unsubscribe on close. Use WebSocket payloads to update query cache incrementally instead of full invalidations where possible.
   6. Provide offline reader entry points using `GET /api/downloads/:id` + stored pages when `isDownloaded`.
-  - ✅ Status (2025-01-13): Downloads surface now renders queue + stats via `useDownloadQueue`/`useDownloadStats` (`src/pages/DownloadsPage.tsx`) with progress bars, status badges, and cancel actions powered by the live API responses. Outstanding: queue-from-reader UX, WebSocket streaming for partial updates, and offline reader handoff.
+  - ✅ **Status (2025-11-12)**: Downloads management now delivers real-time data and WebSocket-driven updates:
+    - `useDownloadQueue`, `useDownloadStats`, `useDownloadDetails`, and `useStartDownload` are all wired to the backend envelopes with filter + mutation support.
+    - `useDownloadSubscription(s)` + `useWebSocketBridge` keep queue data live by subscribing only to the active download IDs (DownloadsPage subscribes to all active IDs, Queue popover subscribes only while open).
+    - `DownloadsPage` renders active/complete progress with stats cards, smart loaders, Mantine tables, and cancel actions that handle 204 responses.
+    - `DownloadPopoverContent` now reflects real queue state, exposes cancel buttons, and shows animated progress bars.
+    - Outstanding: (1) queue-from-reader UX so users can select and queue chapters directly from Reader/Manga Details and (2) offline reader handoff that switches to `GET /api/downloads/:id` assets when a chapter is fully downloaded.
 
 ### 8. Discover/Search & Manga Details
 - **Backend**: Discovery lives in extensions search/manga details/chapters endpoints; data tied to extension IDs.
@@ -324,10 +329,10 @@ Comprehensive plan derived from the backend references in `docs/backend/*.md` (s
       - Catalog query hooks tests ([src/hooks/queries/useCatalogQueries.test.ts](../src/hooks/queries/useCatalogQueries.test.ts))
       - Installer query hooks tests ([src/hooks/queries/useInstallerQueries.test.ts](../src/hooks/queries/useInstallerQueries.test.ts))
     - **Test Scripts** (package.json):
-      - `pnpm test` - Run tests in watch mode
-      - `pnpm test:ui` - Run tests with Vitest UI
-      - `pnpm test:run` - Run tests once (CI mode)
-      - `pnpm test:coverage` - Run with coverage report
+      - `pnpm test` - Run tests once (CI mode)
+      - `pnpm vitest` - Run tests in watch mode
+      - `pnpm vitest -- --ui` - Run tests with Vitest UI
+      - `pnpm test -- --coverage` - Run with coverage report
     - **Developer Documentation**:
       - Created comprehensive [docs/frontend-api-contracts.md](../docs/frontend-api-contracts.md)
       - Documented all API endpoints with request/response formats
@@ -437,10 +442,11 @@ Comprehensive plan derived from the backend references in `docs/backend/*.md` (s
     - Comprehensive event tracking (library additions/updates, reading progress, downloads)
     - Visual event indicators with color-coded icons and themed badges
 
-- **Section 7**: Downloads Management (2025-01-13)
-  - Downloads surface renders queue + stats via `useDownloadQueue`/`useDownloadStats`
-  - Progress bars, status badges, and cancel actions powered by live API responses
-  - DownloadsPage with comprehensive download list, filtering, and status tracking
+- **Section 7**: Downloads Management (2025-11-12)
+  - `DownloadsPage` subscribes to active download IDs via `useDownloadSubscriptions` for live progress, stats cards, and low-latency updates.
+  - QueueButton + DownloadPopoverContent read the real queue, auto-subscribe only when open, and expose cancel actions that hit the backend with 204-safe handling.
+  - Query hooks (`useDownloadQueue`, `useDownloadStats`, `useDownloadDetails`, `useStartDownload`) align with backend envelopes and invalidate caches through `useWebSocketBridge`.
+  - Next up: queue-from-reader multi-select UX and offline reader handoff that swaps to downloaded assets when available.
 
 - **Section 8**: Discover & Manga Details (2025-01-13)
   - **DiscoverPage**: Multi-extension concurrent search, search mode toggle, filters/sorting, popular/trending auto-load
@@ -494,7 +500,7 @@ Comprehensive plan derived from the backend references in `docs/backend/*.md` (s
     - Extensions query hooks (list, search, manga details, chapters)
     - Catalog query hooks (list, sync)
     - Installer query hooks (install, job polling)
-  - **Test Scripts**: `test`, `test:ui`, `test:run`, `test:coverage`
+  - **Test Scripts**: `test`, `test:integration`, `test:extensions` (watch/UI via `pnpm vitest` flags)
   - **Developer Documentation**: Comprehensive [docs/frontend-api-contracts.md](../docs/frontend-api-contracts.md) covering all API endpoints, query hooks, WebSocket integration, testing guide, and references
 
 ### Next Priority

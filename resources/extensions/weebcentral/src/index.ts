@@ -1,18 +1,20 @@
+import type {
+  Chapter,
+  ChapterPayload,
+  ExtensionModule,
+  ExtensionSettingsValues,
+  MangaDetailsPayload,
+  MangaDetailsResult,
+  MangaSearchResult,
+  SearchPayload,
+} from "@jamra/contracts";
 import {
   createSearchController,
   defineExtensionManifest,
   SettingsBinder,
-  type Chapter,
-  type ChapterPayload,
-  type ExtensionModule,
-  type ExtensionSettingsValues,
   type FilterNormalizationContext,
-  type MangaDetailsPayload,
-  type MangaDetailsResult,
-  type MangaSearchResult,
-  type SearchPayload,
   type SettingsAccessors,
-} from "../../../../server/src/sdk/index.ts";
+} from "../../../../packages/server/src/sdk/index.ts";
 import manifestJson from "../manifest.json" with { type: "json" };
 import {
   FILTER_FLAGS,

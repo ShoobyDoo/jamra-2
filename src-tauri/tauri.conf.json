@@ -1,0 +1,33 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "JAMRA",
+  "version": "1.0.0",
+  "identifier": "com.jamra.reader",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build && pnpm bundle:server",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "JAMRA",
+        "fullscreen": false,
+        "width": 1280,
+        "height": 720,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true
+      }
+    ]
+  },
+  "bundle": {
+    "resources": {
+      "../server-bundle": "server-bundle",
+      "../resources": "resources",
+      "../packages/server/src/sdk": "packages/server/src/sdk"
+    }
+  },
+  "plugins": {}
+}

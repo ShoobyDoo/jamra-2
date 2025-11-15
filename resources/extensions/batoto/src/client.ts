@@ -9,7 +9,7 @@ import type {
   NormalizedSort,
   NormalizedSortField,
   Page,
-} from "../../../../server/src/sdk/index.ts";
+} from "@jamra/contracts";
 import {
   ChapterListBuilder,
   CheerioExtractor,
@@ -23,7 +23,7 @@ import {
   toAbsoluteUrl as resolveAbsoluteUrl,
   extractSlugFromUrl as resolveSlugFromUrl,
   type ChapterSource,
-} from "../../../../server/src/sdk/index.ts";
+} from "../../../../packages/server/src/sdk/index.ts";
 
 const BASE_URL = "https://bato.to";
 const DEFAULT_HEADERS = {

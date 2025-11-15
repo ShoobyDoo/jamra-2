@@ -1,18 +1,20 @@
+import type {
+  ExtensionContext,
+  Chapter,
+  ChapterPayload,
+  ExtensionModule,
+  Manga,
+  MangaDetailsPayload,
+  MangaDetailsResult,
+  MangaSearchResult,
+  NormalizedSortField,
+  SearchPayload,
+} from "@jamra/contracts";
 import {
   createSearchController,
   defineExtensionManifest,
   runLimited,
-  type ExtensionContext,
-  type Chapter,
-  type ChapterPayload,
-  type ExtensionModule,
-  type Manga,
-  type MangaDetailsPayload,
-  type MangaDetailsResult,
-  type MangaSearchResult,
-  type NormalizedSortField,
-  type SearchPayload,
-} from "../../../../server/src/sdk/index.ts";
+} from "../../../../packages/server/src/sdk/index.ts";
 import manifestJson from "../manifest.json" with { type: "json" };
 import {
   BROWSE_SORTS,

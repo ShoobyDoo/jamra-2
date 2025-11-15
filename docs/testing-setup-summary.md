@@ -150,12 +150,12 @@ Tests for:
 Added to [package.json](../package.json):
 ```json
 {
-  "test": "vitest",
-  "test:ui": "vitest --ui",
-  "test:run": "vitest run",
-  "test:coverage": "vitest run --coverage"
+  "test": "vitest run",
+  "test:integration": "vitest run --config vitest.integration.config.ts",
+  "test:extensions": "pnpm run build:server && pnpm --filter jamra-server run test:extensions"
 }
 ```
+Interactive flows (watch/UI/coverage) run straight through `pnpm vitest` or `pnpm test -- --coverage`, so the scripts list stays lean.
 
 ### 6. Developer Documentation
 
@@ -206,7 +206,7 @@ These are trivial fixes involving:
 5. **Visual Testing** - Vitest UI for interactive debugging
 
 ### For CI/CD:
-1. **Automated Testing** - `pnpm test:run` for CI pipelines
+1. **Automated Testing** - `pnpm test` for CI pipelines
 2. **Coverage Reports** - HTML, JSON, text formats
 3. **Fail Fast** - Detects API contract violations immediately
 4. **Consistent** - No flaky tests from real network calls
@@ -223,22 +223,22 @@ These are trivial fixes involving:
 
 ### Run Tests (Watch Mode)
 ```bash
-pnpm test
+pnpm vitest
 ```
 
 ### Run Tests with UI
 ```bash
-pnpm test:ui
+pnpm vitest -- --ui
 ```
 
 ### Run Tests Once (CI)
 ```bash
-pnpm test:run
+pnpm test
 ```
 
 ### Generate Coverage Report
 ```bash
-pnpm test:coverage
+pnpm test -- --coverage
 # Opens HTML report in coverage/index.html
 ```
 
@@ -249,7 +249,7 @@ pnpm test useLibraryQueries
 
 ### Debug a Test
 ```bash
-pnpm test:ui
+pnpm vitest -- --ui
 # Open browser, select test, view detailed output
 ```
 

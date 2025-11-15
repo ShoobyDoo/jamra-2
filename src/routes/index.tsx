@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { createBrowserRouter, type RouteObject } from "react-router";
+import { createHashRouter, type RouteObject } from "react-router";
 import { AppLayout } from "../components/AppLayout";
 import { LazyPage } from "./LazyPage";
 import { ROUTES } from "./routes.config";
@@ -187,6 +187,9 @@ const routeConfig: RouteObject[] = [
 ];
 
 /**
- * Create and export the router instance
+ * Create and export the router instance.
+ *
+ * Hash routing behaves consistently in both browser dev builds (Vite) and the
+ * packaged Tauri runtime because it does not rely on an absolute base URL.
  */
-export const router = createBrowserRouter(routeConfig);
+export const router = createHashRouter(routeConfig);

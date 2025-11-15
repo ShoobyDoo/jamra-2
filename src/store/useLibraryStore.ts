@@ -18,8 +18,10 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   sortBy: "title",
 
   selectManga: (id) => {
-    // TODO: Implement
     set((state) => {
+      if (state.selectedMangaIds.has(id)) {
+        return state;
+      }
       const newSet = new Set(state.selectedMangaIds);
       newSet.add(id);
       return { selectedMangaIds: newSet };
@@ -27,15 +29,35 @@ export const useLibraryStore = create<LibraryStore>((set) => ({
   },
 
   deselectManga: (id) => {
-    // TODO: Implement
     set((state) => {
+      if (!state.selectedMangaIds.has(id)) {
+        return state;
+      }
       const newSet = new Set(state.selectedMangaIds);
       newSet.delete(id);
       return { selectedMangaIds: newSet };
     });
   },
 
-  clearSelection: () => set({ selectedMangaIds: new Set() }),
-  setViewMode: (mode) => set({ viewMode: mode }),
-  setSortBy: (sort) => set({ sortBy: sort }),
+  clearSelection: () =>
+    set((state) => {
+      if (state.selectedMangaIds.size === 0) {
+        return state;
+      }
+      return { selectedMangaIds: new Set() };
+    }),
+  setViewMode: (mode) =>
+    set((state) => {
+      if (state.viewMode === mode) {
+        return state;
+      }
+      return { viewMode: mode };
+    }),
+  setSortBy: (sort) =>
+    set((state) => {
+      if (state.sortBy === sort) {
+        return state;
+      }
+      return { sortBy: sort };
+    }),
 }));

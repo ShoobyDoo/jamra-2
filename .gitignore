@@ -10,18 +10,16 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-dist-electron
-dist-electron-build
 *.local
+.tmp/
+src-tauri/target
+src-tauri/gen
 
 # Database and user data
 data/
 *.db
 *.db-shm
 *.db-wal
-
-# Electron build cache
-.electron-cache
 
 # Server build
 server/dist

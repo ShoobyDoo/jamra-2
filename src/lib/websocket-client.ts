@@ -32,7 +32,7 @@ type EventCallback<T = unknown> = (data: T) => void;
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
-  private reconnectTimeout: number | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private listeners = new Map<WSEventType, Set<EventCallback>>();
   private isIntentionalClose = false;
 

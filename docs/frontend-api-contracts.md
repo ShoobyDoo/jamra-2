@@ -393,16 +393,16 @@ wsClient.on('library:item:updated', (payload) => {
 
 ```bash
 # Run tests in watch mode
-pnpm test
+pnpm vitest
 
 # Run tests with UI
-pnpm test:ui
+pnpm vitest -- --ui
 
 # Run tests once (CI mode)
-pnpm test:run
+pnpm test
 
 # Run with coverage
-pnpm test:coverage
+pnpm test -- --coverage
 ```
 
 ### Test Files Location
