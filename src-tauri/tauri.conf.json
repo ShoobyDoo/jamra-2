@@ -5,9 +5,9 @@
   "identifier": "com.jamra.reader",
   "build": {
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build && pnpm bundle:server",
+    "beforeBuildCommand": "pnpm build:app && pnpm bundle:server",
     "devUrl": "http://localhost:5173",
-    "frontendDist": "../dist"
+    "frontendDist": "../build/frontend"
   },
   "app": {
     "windows": [
@@ -24,7 +24,7 @@
   },
   "bundle": {
     "resources": {
-      "../server-bundle": "server-bundle",
+      "../build/server-bundle": "server-bundle",
       "../resources": "resources",
       "../packages/server/src/sdk": "packages/server/src/sdk"
     }

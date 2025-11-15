@@ -113,7 +113,7 @@ pnpm dev
 
 ```bash
 # Start the dev shell (spawns pnpm dev under the hood)
-pnpm tauri:dev
+pnpm desktop
 
 # Tauri opens a native window pointing at the Vite dev server.
 # The backend server is already running because `pnpm dev` runs both halves.
@@ -123,13 +123,16 @@ pnpm tauri:dev
 
 ```bash
 # Build frontend
-pnpm build
+pnpm build:frontend
 
 # Build backend
 pnpm build:server
 
-# Build a signed/bundled desktop app (runs `pnpm build` automatically)
-pnpm tauri:build
+# Build frontend + backend together (no desktop packaging)
+pnpm build:app
+
+# Build a signed/bundled desktop app (runs `pnpm build:app` automatically)
+pnpm build
 ```
 
 ### Log Files (for debugging packaged exe)
@@ -142,7 +145,7 @@ pnpm tauri:build
 
 Before cutting a release or publishing new installers, run the manual smoke steps in [`docs/manual-verification-checklist.md`](docs/manual-verification-checklist.md). The checklist walks through:
 
-- Building a packaged Tauri bundle (`pnpm tauri:build`).
+- Building a packaged Tauri bundle (`pnpm build`).
 - Launching the installer/portable build and verifying migrations completed.
 - Hitting `http://localhost:3000/health` once the bundled server boots.
 - Spot-checking `%APPDATA%/JAMRA` (or platform equivalent) for the SQLite DB and log outputs.
@@ -214,7 +217,7 @@ Better-SQLite3 uses **native bindings** which require special handling:
 
 1. **Native Bindings**: Built during `pnpm install` for the active system Node.js runtime (24+ recommended). Re-run `pnpm rebuild better-sqlite3` after upgrading Node.
 
-2. **Packaging targets**: `pnpm tauri:build` must be executed on each OS you intend to support so the Rust bundle links against the proper system libraries.
+2. **Packaging targets**: `pnpm build` must be executed on each OS you intend to support so the Rust bundle links against the proper system libraries.
 
 3. **Testing**: Build and test on each target platform:
    - Windows x64/arm64
@@ -231,10 +234,11 @@ Better-SQLite3 uses **native bindings** which require special handling:
 - `pnpm dev` - Run Vite frontend + Express backend concurrently
 - `pnpm dev:frontend` - Start the Vite dev server only
 - `pnpm dev:server` - Start Express backend with watch mode
-- `pnpm build` - Build frontend for production
+- `pnpm desktop` - Launch the native Tauri shell wired to Vite dev server
+- `pnpm build:frontend` - Build frontend for production
 - `pnpm build:server` - Build backend for production
-- `pnpm tauri:dev` - Launch the native Tauri shell wired to Vite dev server
-- `pnpm tauri:build` - Create a release-ready Tauri bundle for the host OS
+- `pnpm build:app` - Compile frontend + backend without packaging
+- `pnpm build` - Create a release-ready Tauri bundle for the host OS
 - `pnpm lint` - Run ESLint
 - `pnpm test:extensions` - Validate bundled extensions (manifest + compiler harness)
 

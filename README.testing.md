@@ -156,7 +156,7 @@ it('fetches library list from real backend', async () => {
 ### Packaging Smoke Test
 - **Script:** `pnpm smoke:packaging`
 - **What it does:** Boots the compiled backend bundle (`server/dist/index.js`) with production-like env vars, waits for `http://localhost:32100/health`, and shuts down.
-- **Prereq:** Run `pnpm build` (or at least `pnpm build:server`) so `server/dist` exists.
+- **Prereq:** Run `pnpm build:app` (or at least `pnpm build:server`) so `server/dist` exists.
 - **Use cases:** Pre-release sanity checks, CI guardrails to ensure better-sqlite3 and migrations succeed after compilation.
 
 ---

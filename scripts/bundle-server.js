@@ -11,7 +11,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..");
 
-const bundleDir = path.join(rootDir, "server-bundle");
+const buildDir = path.join(rootDir, "build");
+const bundleDir = path.join(buildDir, "server-bundle");
 const serverDistDir = path.join(rootDir, "packages", "server", "dist");
 const nodeModulesDir = path.join(rootDir, "node_modules");
 
@@ -32,7 +33,6 @@ const requiredDependencies = [
   "real-require",
   "safe-stable-stringify",
   "quick-format-unescaped",
-  "fast-redact",
   "atomic-sleep",
   "sonic-boom",
   "cheerio",
@@ -51,8 +51,6 @@ const requiredDependencies = [
   "fresh",
   "http-errors",
   "merge-descriptors",
-  "methods",
-  "mime",
   "ms",
   "on-finished",
   "parseurl",
@@ -66,7 +64,6 @@ const requiredDependencies = [
   "setprototypeof",
   "statuses",
   "type-is",
-  "utils-merge",
   "vary",
   // Cheerio dependencies
   "htmlparser2",
@@ -74,7 +71,10 @@ const requiredDependencies = [
   "domelementtype",
   "domutils",
   "entities",
-  // WS dependencies
+];
+
+const optionalDependencies = [
+  // Optional peer dependencies for `ws`
   "utf-8-validate",
   "bufferutil",
 ];
@@ -96,52 +96,74 @@ async function bundleServer() {
     const bundleNodeModules = path.join(bundleDir, "node_modules");
     await fs.ensureDir(bundleNodeModules);
 
-    // Copy required dependencies
-    console.log("📦 Bundling dependencies...");
-    for (const dep of requiredDependencies) {
+    const bundledDependencies = new Set();
+
+    const copyDependency = async (dep, { optional = false } = {}) => {
       const sourcePath = path.join(nodeModulesDir, dep);
       const targetPath = path.join(bundleNodeModules, dep);
 
-      if (await fs.pathExists(sourcePath)) {
-        await fs.copy(sourcePath, targetPath, {
-          filter: (src) => {
-            // Skip unnecessary files to reduce bundle size
-            const relativePath = path.relative(sourcePath, src);
+      if (!(await fs.pathExists(sourcePath))) {
+        if (optional) {
+          console.log(`  • ${dep} (optional dependency not installed)`);
+        } else {
+          console.warn(`  ⚠️  ${dep} not found, skipping...`);
+        }
+        return;
+      }
 
-            // Skip test files, docs, examples
-            if (
-              relativePath.match(/\/(test|tests|docs|examples?|\.github)\//)
-            ) {
-              return false;
-            }
+      await fs.copy(sourcePath, targetPath, {
+        filter: (src) => {
+          // Skip unnecessary files to reduce bundle size
+          const relativePath = path.relative(sourcePath, src);
 
-            // Skip markdown files except README
-            if (
-              relativePath.match(/\.md$/) &&
-              !relativePath.match(/README\.md$/i)
-            ) {
-              return false;
-            }
+          // Skip test files, docs, examples
+          if (relativePath.match(/\/(test|tests|docs|examples?|\.github)\//)) {
+            return false;
+          }
 
-            return true;
-          },
-        });
-        console.log(`  ✓ ${dep}`);
-      } else {
-        console.warn(`  ⚠️  ${dep} not found, skipping...`);
+          // Skip markdown files except README
+          if (
+            relativePath.match(/\.md$/) &&
+            !relativePath.match(/README\.md$/i)
+          ) {
+            return false;
+          }
+
+          return true;
+        },
+      });
+      bundledDependencies.add(dep);
+      console.log(`  ✓ ${dep}`);
+    };
+
+    // Copy required dependencies
+    console.log("📦 Bundling dependencies...");
+    for (const dep of requiredDependencies) {
+      await copyDependency(dep);
+    }
+
+    if (optionalDependencies.length > 0) {
+      console.log("\nℹ️ Checking optional dependencies...");
+      for (const dep of optionalDependencies) {
+        await copyDependency(dep, { optional: true });
       }
     }
 
     // Create package.json for the bundle
+    const dependencies = Array.from(bundledDependencies).sort().reduce(
+      (acc, dep) => {
+        acc[dep] = "*";
+        return acc;
+      },
+      {},
+    );
+
     const bundlePackageJson = {
       name: "jamra-server-bundle",
       version: "1.0.0",
       type: "module",
       main: "dist/index.js",
-      dependencies: requiredDependencies.reduce((acc, dep) => {
-        acc[dep] = "*";
-        return acc;
-      }, {}),
+      dependencies,
     };
 
     await fs.writeJson(

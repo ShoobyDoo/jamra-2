@@ -14,9 +14,9 @@
 - Dev frontend: `pnpm dev:frontend`
 - Dev backend: `pnpm dev:server`
 - Dev both (concurrently): `pnpm dev`
-- Desktop shell (Tauri): `pnpm tauri:dev`
-- Production build (app + server): `pnpm build && pnpm build:server`
-- Desktop bundle (all platforms): `pnpm tauri:build` (runs on host OS)
+- Desktop shell (Tauri): `pnpm desktop`
+- Production build (app + server): `pnpm build:app`
+- Desktop bundle (all platforms): `pnpm build` (runs on host OS)
 
 ## Coding Style & Naming
 
@@ -43,8 +43,8 @@
 
 - **Tauri** handles packaging (see `src-tauri/tauri.conf.json`)
   - `beforeDevCommand`: `pnpm dev` (frontend + server watchers)
-  - `beforeBuildCommand`: `pnpm build` (frontend + backend bundle)
-  - Resources bundled with the app: `dist/`, `server/dist/`, `resources/`, `node_modules/`
+  - `beforeBuildCommand`: `pnpm build:app && pnpm bundle:server`
+  - Resources bundled with the app: `build/frontend`, `build/server-bundle`, `resources/`, `packages/server/src/sdk`
 - The packaged app currently expects the host to have Node.js 24 available. Bundling a portable Node runtime is tracked separately.
 - Release artifacts land in `src-tauri/target/release/`
 

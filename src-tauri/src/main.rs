@@ -4,12 +4,31 @@ use log::{error, info, warn};
 use once_cell::sync::Lazy;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, RunEvent, State};
+use tauri::{AppHandle, Manager, RunEvent, State, Wry};
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind};
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 static SERVER_PROCESS: Lazy<Mutex<Option<Child>>> = Lazy::new(|| Mutex::new(None));
+type StatusMenuItem = MenuItem<Wry>;
+
+static SERVER_STATUS_MENU_ITEM: Lazy<Mutex<Option<StatusMenuItem>>> =
+    Lazy::new(|| Mutex::new(None));
+static SERVER_STATUS: Lazy<Mutex<ServerStatus>> =
+    Lazy::new(|| Mutex::new(ServerStatus::Starting));
+
+#[derive(Clone)]
+enum ServerStatus {
+    Starting,
+    Running,
+    Stopped,
+    Failed(String),
+    DevManaged,
+}
 
 // State for minimize-to-tray preference
 struct MinimizeToTrayState(Arc<Mutex<bool>>);
@@ -29,6 +48,8 @@ fn logging_targets() -> Vec<Target> {
 const LOG_FILE_NAME: &str = "main";
 const MAX_LOG_FILE_BYTES: u128 = 10 * 1024 * 1024; // 10 MB per file
 const SERVER_LOG_FILE: &str = "server";
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 // Command to update minimize-to-tray preference
 #[tauri::command]
@@ -44,13 +65,92 @@ fn get_minimize_to_tray(state: State<MinimizeToTrayState>) -> bool {
     state.0.lock().map(|guard| *guard).unwrap_or(true)
 }
 
+fn status_text(status: &ServerStatus) -> String {
+    match status {
+        ServerStatus::Starting => "Starting...".to_string(),
+        ServerStatus::Running => "Running".to_string(),
+        ServerStatus::Stopped => "Stopped".to_string(),
+        ServerStatus::Failed(reason) => format!("Failed ({reason})"),
+        ServerStatus::DevManaged => "Managed by pnpm dev".to_string(),
+    }
+}
+
+fn set_server_status(status: ServerStatus) {
+    {
+        let mut guard = SERVER_STATUS.lock().expect("status mutex poisoned");
+        *guard = status.clone();
+    }
+
+    if let Ok(guard) = SERVER_STATUS_MENU_ITEM.lock() {
+        if let Some(item) = guard.as_ref() {
+            let label = format!("Server: {}", status_text(&status));
+            if let Err(err) = item.set_text(&label) {
+                warn!("Failed to update server status menu item: {err}");
+            }
+        }
+    }
+}
+
+fn register_server_status_item(item: &StatusMenuItem) {
+    if let Ok(mut guard) = SERVER_STATUS_MENU_ITEM.lock() {
+        guard.replace(item.clone());
+    }
+
+    if let Ok(guard) = SERVER_STATUS.lock() {
+        let label = format!("Server: {}", status_text(&guard));
+        if let Err(err) = item.set_text(&label) {
+            warn!("Failed to initialize server status text: {err}");
+        }
+    }
+}
+
+fn monitor_server_process() {
+    std::thread::spawn(|| loop {
+        std::thread::sleep(Duration::from_secs(1));
+
+        let exit_status = {
+            let mut guard = SERVER_PROCESS.lock().expect("server mutex poisoned");
+            if let Some(child) = guard.as_mut() {
+                match child.try_wait() {
+                    Ok(Some(status)) => {
+                        guard.take();
+                        Some(status)
+                    }
+                    Ok(None) => None,
+                    Err(err) => {
+                        error!("Failed to poll server status: {err}");
+                        None
+                    }
+                }
+            } else {
+                return;
+            }
+        };
+
+        if let Some(status) = exit_status {
+            if status.success() {
+                set_server_status(ServerStatus::Stopped);
+            } else {
+                let reason = status
+                    .code()
+                    .map(|code| format!("exit code {}", code))
+                    .unwrap_or_else(|| "terminated".to_string());
+                set_server_status(ServerStatus::Failed(reason));
+            }
+            break;
+        }
+    });
+}
+
 fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     if cfg!(debug_assertions) {
         // Dev mode runs the server via `pnpm dev` already.
         info!("Development mode detected - backend managed by `pnpm dev`");
+        set_server_status(ServerStatus::DevManaged);
         return Ok(());
     }
 
+    set_server_status(ServerStatus::Starting);
     info!("Starting production server...");
 
     let resource_dir = app.path().resource_dir()?;
@@ -76,6 +176,7 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
             "Server entry point missing at {:?}. Did the bundle script run?",
             server_entry
         );
+        set_server_status(ServerStatus::Failed("missing bundle".into()));
         return Err(tauri::Error::Io(std::io::Error::new(
             std::io::ErrorKind::NotFound,
             format!("Server entry point not found at {:?}. Run 'pnpm bundle:server'.", server_entry),
@@ -116,9 +217,15 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
         }
     }
 
+    #[cfg(windows)]
+    {
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+
     info!("Spawning server process...");
     let child = cmd.spawn().map_err(|error| {
         error!("Failed to spawn server: {error}");
+        set_server_status(ServerStatus::Failed("spawn error".into()));
         tauri::Error::Io(std::io::Error::new(
             std::io::ErrorKind::Other,
             format!("Failed to spawn server: {}", error),
@@ -128,8 +235,12 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     let pid = child.id();
     info!("Server started successfully (PID: {})", pid);
 
-    let mut handle = SERVER_PROCESS.lock().expect("mutex poisoned");
-    *handle = Some(child);
+    {
+        let mut handle = SERVER_PROCESS.lock().expect("mutex poisoned");
+        *handle = Some(child);
+    }
+    set_server_status(ServerStatus::Running);
+    monitor_server_process();
 
     Ok(())
 }
@@ -137,7 +248,7 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
 #[cfg(target_os = "windows")]
 fn kill_server() {
     if let Ok(mut guard) = SERVER_PROCESS.lock() {
-        if let Some(child) = guard.take() {
+        if let Some(mut child) = guard.take() {
             let pid = child.id();
             info!("Terminating server process (PID: {})", pid);
             // Use taskkill for graceful shutdown on Windows
@@ -145,8 +256,27 @@ fn kill_server() {
                 .args(&["/PID", &pid.to_string(), "/T"])
                 .output();
 
-            // Wait up to 5 seconds for graceful shutdown
-            std::thread::sleep(std::time::Duration::from_secs(5));
+            // Poll for up to 5 seconds so we exit as soon as the server stops
+            for _ in 0..50 {
+                match child.try_wait() {
+                    Ok(Some(_)) => {
+                        set_server_status(ServerStatus::Stopped);
+                        return;
+                    }
+                    Ok(None) => {
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                    }
+                    Err(err) => {
+                        warn!("Failed to poll server process status: {err}");
+                        break;
+                    }
+                }
+            }
+
+            // Force kill if still running after timeout
+            let _ = child.kill();
+            warn!("Server process did not exit after taskkill - forced kill issued");
+            set_server_status(ServerStatus::Stopped);
         }
     }
 }
@@ -165,6 +295,7 @@ fn kill_server() {
             // Wait up to 5 seconds for graceful shutdown
             for _ in 0..50 {
                 if child.try_wait().ok().flatten().is_some() {
+                    set_server_status(ServerStatus::Stopped);
                     return;
                 }
                 std::thread::sleep(std::time::Duration::from_millis(100));
@@ -173,6 +304,7 @@ fn kill_server() {
             // Force kill if still running
             let _ = child.kill();
             warn!("Server process did not exit gracefully - forced kill issued");
+            set_server_status(ServerStatus::Stopped);
         }
     }
 }
@@ -200,13 +332,16 @@ fn main() {
             spawn_server(&handle)?;
 
             // Create tray menu
+            let server_status_item =
+                MenuItem::with_id(app, "server-status", "Server: Starting...", false, None::<&str>)?;
+            register_server_status_item(&server_status_item);
             let show_item = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
             let hide_item = MenuItem::with_id(app, "hide", "Hide", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
             let menu = Menu::with_items(
                 app,
-                &[&show_item, &hide_item, &quit_item],
+                &[&server_status_item, &show_item, &hide_item, &quit_item],
             )?;
 
             // Build tray icon with embedded icon

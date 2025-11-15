@@ -49,8 +49,6 @@ jobs:
           files: ./coverage/coverage-final.json
           flags: unit-tests
           fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration-tests:
     name: Integration Tests
@@ -167,4 +165,4 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Build Tauri bundle
-        run: pnpm tauri:build
+        run: pnpm build

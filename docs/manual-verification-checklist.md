@@ -7,22 +7,21 @@ Native modules (better-sqlite3) and the embedded server require a quick manual p
 - After dependency bumps touching Electron, better-sqlite3, or the backend server.
 - Whenever packaging fails in CI and you need to validate fixes locally.
 
-> **Automation note:** CI (and local devs) can run `pnpm smoke:packaging` after `pnpm build` to ensure the compiled backend boots. The checklist below is still required because it validates the full packaged desktop shell plus native log locations.
+> **Automation note:** CI (and local devs) can run `pnpm smoke:packaging` after `pnpm build:app` to ensure the compiled backend boots. The checklist below is still required because it validates the full packaged desktop shell plus native log locations.
 
 ## 1. Build & Package
 ```bash
 # Install/update dependencies if needed
 pnpm install
 
-# Build renderer + backend bundles
-pnpm build
-pnpm build:server
+# Build renderer + backend bundles (no packaging)
+pnpm build:app
 
-# Create an installer/portable build for your platform
-pnpm dist:win    # or dist:mac / dist:linux
+# Create an installer/portable build for your current platform
+pnpm build
 ```
 
-Artifacts land in `release/`. Launch the installer/portable executable from there.
+Artifacts land in `src-tauri/target/release/`. Launch the installer/portable executable from there.
 
 ## 2. Launch the Packaged App
 1. Install or unzip the artifact you built above.

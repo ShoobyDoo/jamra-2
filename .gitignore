@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+build/
 dist
 dist-ssr
 *.local
@@ -22,7 +23,7 @@ data/
 *.db-wal
 
 # Server build
-server/dist
+packages/server/dist
 
 # Editor directories and files
 .vscode/*
