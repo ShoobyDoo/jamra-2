@@ -6,7 +6,6 @@
 
 import fs from "fs-extra";
 import path from "path";
-import os from "os";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -89,7 +88,6 @@ const bundleNodeRuntime = async () => {
     sourceBinary: sourceBinary,
     nodeVersion: process.version,
     generatedAt: new Date().toISOString(),
-    hostname: os.hostname(),
     envOverrides: {
       NODE_RUNTIME_DIR: Boolean(envRuntimeDir),
       NODE_RUNTIME_FILES: Boolean(process.env.NODE_RUNTIME_FILES),

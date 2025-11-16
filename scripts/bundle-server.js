@@ -149,6 +149,9 @@ async function bundleServer() {
       }
     }
 
+    console.log("\n🧹 Pruning native build artifacts...");
+    await pruneNativeBuildArtifacts(bundleNodeModules);
+
     // Create package.json for the bundle
     const dependencies = Array.from(bundledDependencies).sort().reduce(
       (acc, dep) => {
@@ -172,15 +175,15 @@ async function bundleServer() {
       { spaces: 2 },
     );
 
-    console.log("\n✅ Server bundle created successfully!");
-    console.log(`📁 Bundle location: ${bundleDir}`);
-
-    // Calculate bundle size
-    const { size } = await fs.stat(bundleDir);
-    const sizeInMB = ((await getFolderSize(bundleDir)) / 1024 / 1024).toFixed(
+    const bundleSizeMB = ((await getFolderSize(bundleDir)) / 1024 / 1024).toFixed(
       2,
     );
-    console.log(`📊 Bundle size: ${sizeInMB} MB`);
+
+    console.log("\n✅ Server bundle created successfully!");
+    console.log("\n--- Build Summary ---");
+    console.log(`📁 Output: ${bundleDir}`);
+    console.log(`📦 Dependencies bundled: ${bundledDependencies.size}`);
+    console.log(`📊 Bundle size: ${bundleSizeMB} MB`);
   } catch (error) {
     console.error("❌ Failed to bundle server:", error);
     process.exit(1);
@@ -203,6 +206,33 @@ async function getFolderSize(folderPath) {
   }
 
   return size;
+}
+
+async function pruneNativeBuildArtifacts(nodeModulesPath) {
+  await pruneBetterSqlite3Artifacts(nodeModulesPath);
+}
+
+async function pruneBetterSqlite3Artifacts(nodeModulesPath) {
+  const modulePath = path.join(nodeModulesPath, "better-sqlite3");
+  if (!(await fs.pathExists(modulePath))) {
+    return;
+  }
+
+  const buildDir = path.join(modulePath, "build");
+  const releaseDir = path.join(buildDir, "Release");
+
+  // Drop nested deps directories that only contain node-gyp build logs.
+  await fs.remove(path.join(buildDir, "deps"));
+
+  if (await fs.pathExists(releaseDir)) {
+    const keepFiles = new Set(["better_sqlite3.node"]);
+    const releaseEntries = await fs.readdir(releaseDir);
+    for (const entry of releaseEntries) {
+      if (!keepFiles.has(entry)) {
+        await fs.remove(path.join(releaseDir, entry));
+      }
+    }
+  }
 }
 
 bundleServer();

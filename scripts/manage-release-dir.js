@@ -23,6 +23,8 @@ const cacheEntries = new Set([
   "incremental",
   "_up_",
   "CACHEDIR.TAG",
+  ".fingerprint",
+  ".cargo-lock",
 ]);
 
 const ensureReleaseDirExists = async () => {
@@ -47,6 +49,9 @@ export const organizeReleaseDirectory = async () => {
   }
 
   await fs.ensureDir(artifactsDir);
+  console.log(
+    `[release-manager] Preserving cache entries: ${Array.from(cacheEntries).join(", ")}`,
+  );
 
   const entries = await fs.readdir(releaseDir);
   for (const entry of entries) {
@@ -58,11 +63,16 @@ export const organizeReleaseDirectory = async () => {
   }
 };
 
-const command = process.argv[2];
+const isCliInvocation =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(__filename);
 
-if (!command || command === "organize") {
-  organizeReleaseDirectory().catch((error) => {
-    console.error("[release-manager] Failed to organize release directory:", error);
-    process.exit(1);
-  });
+if (isCliInvocation) {
+  const command = process.argv[2];
+  if (!command || command === "organize") {
+    organizeReleaseDirectory().catch((error) => {
+      console.error("[release-manager] Failed to organize release directory:", error);
+      process.exit(1);
+    });
+  }
 }

@@ -165,8 +165,13 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     std::fs::create_dir_all(&log_dir)?;
     let log_dir_env = log_dir.clone().into_os_string();
 
+    let data_dir = app.path().app_data_dir()?;
+    std::fs::create_dir_all(&data_dir)?;
+    let data_dir_env = data_dir.clone().into_os_string();
+
     info!("Resource dir: {:?}", resource_dir);
     info!("Log dir: {:?}", log_dir);
+    info!("Data dir: {:?}", data_dir);
 
     // Server bundle paths
     let server_bundle_dir = resource_dir.join("server-bundle");
@@ -225,6 +230,7 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
         .env("SERVER_BASE_URL", SERVER_BASE_URL)
         .env("ELECTRON_PACKAGED", "true")
         .env("RESOURCES_PATH", resource_dir_normalized)
+        .env("DB_PATH", data_dir_env)
         .env("JAMRA_LOG_DIR", log_dir_env)
         .env("JAMRA_LOG_FILE", SERVER_LOG_FILE)
         .env(

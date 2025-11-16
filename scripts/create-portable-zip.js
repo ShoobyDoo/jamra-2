@@ -122,7 +122,7 @@ This portable package contains:
 - node-runtime/ (bundled Node.js runtime)
 
 All data will be stored in:
-  %APPDATA%\\JAMRA
+  %APPDATA%\\com.shoobydoo.jamra
 
 TROUBLESHOOTING
 ---------------
