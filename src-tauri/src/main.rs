@@ -173,7 +173,21 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
     let server_entry = server_bundle_dir.join("dist").join("index.js");
     let node_modules = server_bundle_dir.join("node_modules");
 
-    info!("Using system Node.js");
+    let node_runtime_dir = resource_dir.join("node-runtime");
+    let bundled_node_binary = if cfg!(target_os = "windows") {
+        node_runtime_dir.join("node.exe")
+    } else {
+        node_runtime_dir.join("node")
+    };
+
+    let use_bundled_node = bundled_node_binary.exists();
+
+    if use_bundled_node {
+        info!("Using bundled Node.js runtime at {:?}", bundled_node_binary);
+    } else {
+        info!("Bundled Node.js runtime not found; falling back to system Node.js");
+    }
+
     info!("Server entry: {:?}", server_entry);
     info!("Node modules dir: {:?}", node_modules);
 
@@ -194,13 +208,16 @@ fn spawn_server(app: &AppHandle) -> tauri::Result<()> {
         warn!("node_modules not found at {:?}; Node will rely on packaged dependencies", node_modules);
     }
 
-    // Use system Node.js instead of bundled binary
     // Convert paths to avoid UNC prefix issues with Node.js on Windows
     let server_bundle_dir_normalized = dunce::simplified(&server_bundle_dir);
     let server_entry_normalized = dunce::simplified(&server_entry);
     let resource_dir_normalized = dunce::simplified(&resource_dir);
 
-    let mut cmd = Command::new("node");
+    let mut cmd = if use_bundled_node {
+        Command::new(dunce::simplified(&bundled_node_binary))
+    } else {
+        Command::new("node")
+    };
     cmd.arg(server_entry_normalized)
         .current_dir(server_bundle_dir_normalized)
         .env("PORT", SERVER_PORT_STR)

@@ -44,11 +44,11 @@
 - **Tauri** handles packaging (see `src-tauri/tauri.conf.json`)
   - `beforeDevCommand`: `pnpm dev` (frontend + server watchers)
   - `beforeBuildCommand`: `pnpm build:app && pnpm bundle:server`
-  - Resources bundled with the app: `build/frontend`, `build/server-bundle`, `resources/`, `packages/server/src/sdk`
-- The packaged app currently expects the host to have Node.js 24 available. Bundling a portable Node runtime is tracked separately.
+  - Resources bundled with the app: `build/frontend`, `build/server-bundle`, `build/node-runtime`, `resources/`, `packages/server/src/sdk`
+- Packaged builds include a Node.js 24 runtime under `resources/node-runtime` so the host does not need a global Node install.
 - Release artifacts land in `src-tauri/target/release/`
 
 ## Support & Troubleshooting
 
 - Existing Electron docs (`docs/Windows-Electron-Packaging.md`, etc.) are considered legacy reference. New Tauri-specific notes live alongside `docs/manual-verification-checklist.md`.
-- If the bundled server fails to start, inspect the Tauri stdout logs (the Rust host emits spawn errors) and ensure Node.js 24+ is installed system-wide.
+- If the bundled server fails to start, inspect the Tauri stdout logs (the Rust host emits spawn errors) and ensure `resources/node-runtime/node.exe` was bundled correctly.

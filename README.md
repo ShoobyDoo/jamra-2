@@ -28,7 +28,7 @@ A feature-rich manga reader desktop application built with Tauri, React, and Exp
 
 - Development runs `pnpm dev` (Vite + server) while `tauri dev` opens the native shell.
 - Packaged builds run the compiled Express server via Tauri on port `3000`.
-- The bundled server currently relies on the system Node.js runtime (24.x recommended). Shipping a portable Node binary is tracked separately.
+- Packaged builds ship with a Node.js runtime (24.x) so end users don't need Node installed; development still requires Node 24+ locally.
 
 > **Note**: Version numbers listed above represent major versions. For exact dependency versions, refer to `package.json`.
 

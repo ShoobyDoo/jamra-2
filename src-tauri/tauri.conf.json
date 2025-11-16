@@ -23,10 +23,31 @@
     ]
   },
   "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "icon": ["icons/icon.ico"],
     "resources": {
       "../build/server-bundle": "server-bundle",
       "../resources": "resources",
-      "../packages/server/src/sdk": "packages/server/src/sdk"
+      "../packages/server/src/sdk": "packages/server/src/sdk",
+      "../build/node-runtime": "node-runtime"
+    },
+    "windows": {
+      "digestAlgorithm": "sha256",
+      "nsis": {
+        "installMode": "both",
+        "languages": ["English"],
+        "displayLanguageSelector": false,
+        "compression": "lzma",
+        "startMenuFolder": "JAMRA"
+      },
+      "wix": {
+        "language": ["en-US"]
+      },
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      }
     }
   },
   "plugins": {}
